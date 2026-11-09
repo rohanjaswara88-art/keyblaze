@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en" data-theme="nebula">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Keyblaze</title>
+  <meta name="description" content="A calm, beautiful typing speed test with a consistency graph, sound packs and a 37-step rank ladder.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="js/perf.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/home.css">
+  <link rel="stylesheet" href="css/typing.css">
+  <link rel="stylesheet" href="css/views.css">
+  <link rel="stylesheet" href="css/splash-cursor.css">
+  <link rel="stylesheet" href="css/flex-carousel.css">
+  <link rel="stylesheet" href="css/difficulty.css">
+</head>
+<body class="on-home">
+  <!-- Dusk landscape, rendered by js/scene.js -->
+  <div class="scene" id="scene" aria-hidden="true">
+    <canvas id="scene-gl"></canvas>
+    <div class="sky"></div>
+    <div class="stars" id="stars"></div>
+    <div class="shooting-star"></div>
+    <svg class="mountains" id="mountains" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice"></svg>
+    <div class="fog f1"></div>
+    <div class="fog f2"></div>
+    <div class="nebula" aria-hidden="true"><div class="nebula-dome"></div><div class="nebula-rim"></div><div class="nebula-haze"></div></div>
+    <div class="scene-vignette"></div>
+  </div>
+
+  <canvas id="fx-canvas" aria-hidden="true"></canvas>
+
+  <!-- SVG filter for refractive liquid glass edges (Chromium only, progressive) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="lg-refract" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="2" seed="7" result="noise"/>
+      <feGaussianBlur in="noise" stdDeviation="2" result="soft"/>
+      <feDisplacementMap in="SourceGraphic" in2="soft" scale="38" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+
+  <header class="topbar">
+    <button class="brand" id="logo" data-view="home" type="button" aria-label="Keyblaze home"><span class="brand-mark">Keyblaze</span></button>
+    <nav class="nav" aria-label="Main">
+      <button class="nav-btn btn" data-view="home" type="button">Home</button>
+      <button class="nav-btn btn" data-view="type" type="button">Test</button>
+      <button class="nav-btn btn" data-view="ranks" type="button">Ranks</button>
+      <button class="nav-btn btn" data-view="profile" type="button">Profile</button>
+    </nav>
+    <button class="rank-chip btn" id="rank-chip" data-view="ranks" type="button" aria-label="Your rank">
+      <span class="rank-chip-badge" id="chip-badge"></span>
+      <span class="rank-chip-text">
+        <span class="rank-chip-label" id="chip-label">Stone III</span>
+        <span class="rank-chip-bar"><i id="chip-bar"></i></span>
+      </span>
+    </button>
+  </header>
+
+  <main>
+    <!-- HOME / LANDING -->
+    <section class="view active" id="view-home" aria-label="Home">
+      <div class="hero">
+        <p class="hero-pill"><span class="dot"></span>New · 13 hand-crafted rank emblems</p>
+        <h1 class="hero-title">
+          <span class="line dim">Where every keystroke</span>
+          <span class="line"><span class="dim">becomes</span> <em>pure flow.</em></span>
+        </h1>
+        <div class="hero-bottom">
+          <p class="hero-sub">Measure your speed, master your rhythm and climb <span class="bright">37 ranks</span> with a typing test that feels as calm as it looks.</p>
+          <button class="launch btn" data-view="type" type="button">Start typing</button>
+          <p class="hero-note">Free · no sign-up</p>
+        </div>
+        <div class="scroll-cue" aria-hidden="true"><span></span></div>
+      </div>
+
+      <div class="marquee" aria-hidden="true">
+        <div class="marquee-track" id="marquee-track">
+          <span>speed</span><i>✦</i><span>rhythm</span><i>✦</i><span>accuracy</span><i>✦</i><span>focus</span><i>✦</i><span>flow</span><i>✦</i><span>consistency</span><i>✦</i>
+        </div>
+      </div>
+
+      <div class="home-section difficulty-section" id="difficulty">
+        <div class="difficulty-head reveal">
+          <p class="eyebrow">Choose your difficulty</p>
+          <h2 class="section-title">Thirteen badges. <em>Ten tests each.</em></h2>
+          <p class="section-sub">Drag, scroll or use the arrow keys. Click the centered badge to pick that level. Every badge is harder than the one before, and every test is harder than the last.</p>
+        </div>
+        <div class="flex-stage reveal">
+          <div class="flex-host" id="flex-carousel"></div>
+          <div class="flex-fallback" id="flex-fallback" hidden></div>
+        </div>
+        <div class="level-panel glass reveal" id="level-panel" aria-live="polite"></div>
+      </div>
+
+      <div class="home-section demo-section reveal">
+        <div class="demo-copy">
+          <p class="eyebrow">Live preview</p>
+          <h2 class="section-title">Watch the <em>flow.</em></h2>
+          <p class="section-sub">Every key lands with a soft click, the caret glides, and your speed is tracked second by second. This preview types by itself.</p>
+          <button class="ghost btn" data-view="type" type="button">Try it yourself →</button>
+        </div>
+        <div class="demo-card glass">
+          <div class="demo-top">
+            <span class="demo-dots"><i></i><i></i><i></i></span>
+            <span class="demo-stat"><b id="demo-wpm">0</b> wpm</span>
+            <span class="demo-stat"><b id="demo-acc">100</b>% acc</span>
+          </div>
+          <p class="demo-text" id="demo-text"></p>
+          <svg class="demo-spark" viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true">
+            <defs><linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.25"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+            <path id="demo-area" fill="url(#spark-fill)" d=""/>
+            <path id="demo-line" fill="none" stroke="#fff" stroke-width="1.5" d=""/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="home-section stats-band reveal">
+        <div class="stat-big"><b data-count="37">0</b><span>ranks to climb</span></div>
+        <div class="stat-big"><b data-count="13">0</b><span>animated emblems</span></div>
+        <div class="stat-big"><b data-count="5">0</b><span>sound packs</span></div>
+        <div class="stat-big"><b data-count="0">0</b><span>sign-ups needed</span></div>
+      </div>
+
+      <div class="home-section reveal">
+        <p class="eyebrow">Features</p>
+        <h2 class="section-title">Everything you need <span class="dim">to type</span> <em>faster.</em></h2>
+        <div class="bento">
+          <article class="feature glass big reveal">
+            <div>
+              <h3>Live consistency graph</h3>
+              <p>Speed, raw pace and every mistake, second by second, so you see exactly where your rhythm breaks.</p>
+            </div>
+            <svg class="bento-chart" viewBox="0 0 400 120" preserveAspectRatio="none" aria-hidden="true">
+              <path class="chart-raw" d="M0 70 C30 40 50 90 80 60 S130 30 160 55 S210 80 240 45 S300 30 330 50 S380 40 400 42"/>
+              <path class="chart-wpm" d="M0 100 C40 80 60 70 100 62 S170 50 210 48 S300 44 340 42 S380 40 400 40"/>
+              <circle class="chart-err" cx="80" cy="96" r="3"/><circle class="chart-err" cx="240" cy="92" r="3"/>
+            </svg>
+          </article>
+          <article class="feature glass reveal">
+            <span class="feature-emblem" id="feature-emblem"></span>
+            <h3>37 ranks to earn</h3>
+            <p>From Stone to Apex. Beat your tier's target speed with clean accuracy to climb.</p>
+          </article>
+          <article class="feature glass reveal">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            <h3>Tactile sound packs</h3>
+            <p>Thock, click, bubble, typewriter and pop, each key slightly varied.</p>
+          </article>
+          <article class="feature glass reveal">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>
+            <h3>Flow combos</h3>
+            <p>Chain correct keystrokes and watch the text begin to glow.</p>
+          </article>
+          <article class="feature glass reveal">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z"/></svg>
+            <h3>Four moods</h3>
+            <p>Dusk, midnight, dawn and aurora. The whole landscape changes with you.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="home-section reveal">
+        <p class="eyebrow">How it works</p>
+        <h2 class="section-title">Three steps <span class="dim">to your</span> <em>number.</em></h2>
+        <div class="steps">
+          <div class="step reveal"><span class="step-num">01</span><h3>Type</h3><p>Pick 15 to 120 seconds or a word count, then just start. The timer begins on your first key.</p></div>
+          <div class="step reveal"><span class="step-num">02</span><h3>Review</h3><p>See your speed, accuracy and consistency, plus a graph of every second.</p></div>
+          <div class="step reveal"><span class="step-num">03</span><h3>Climb</h3><p>Earn rating points, unlock emblems and push for the next division.</p></div>
+        </div>
+      </div>
+
+      <div class="home-section keys-section reveal">
+        <p class="eyebrow">Go on</p>
+        <h2 class="section-title">Press <em>them.</em></h2>
+        <div class="keycaps" id="keycaps">
+          <button class="keycap" type="button" data-cap="f">F</button>
+          <button class="keycap" type="button" data-cap="l">L</button>
+          <button class="keycap" type="button" data-cap="o">O</button>
+          <button class="keycap" type="button" data-cap="w">W</button>
+        </div>
+        <p class="section-sub center">Click the keys, or type them on your keyboard.</p>
+      </div>
+
+      <div class="home-section reveal">
+        <p class="eyebrow">The ladder</p>
+        <h2 class="section-title">Thirteen tiers. <span class="dim">One</span> <em>summit.</em></h2>
+        <div class="badge-rail glass" id="badge-rail"></div>
+      </div>
+
+      <div class="home-section final-cta reveal">
+        <h2 class="section-title big">Ready when <em>you are.</em></h2>
+        <p class="hero-sub">Thirty seconds is all it takes to find your number.</p>
+        <button class="launch btn" data-view="type" type="button">Launch the test</button>
+      </div>
+
+      <footer class="site-footer">
+        <div class="foot-brand"><span class="brand-mark">Keyblaze</span><p>A calm place to get fast.</p></div>
+        <div class="foot-col"><b>Product</b><button class="link" data-view="type" type="button">Typing test</button><button class="link" data-view="ranks" type="button">Ranks</button><button class="link" data-view="profile" type="button">Profile</button></div>
+        <div class="foot-col"><b>Modes</b><span>Time 15 · 30 · 60 · 120</span><span>Words 10 · 25 · 50 · 100</span><span>Punctuation &amp; numbers</span></div>
+      </footer>
+    </section>
+
+    <!-- TYPE VIEW -->
+    <section class="view" id="view-type" aria-label="Typing test">
+      <div class="challenge-bar glass" id="challenge-bar" hidden>
+        <span class="challenge-badge" id="challenge-badge"></span>
+        <span class="challenge-info"><small id="challenge-kicker">Level 1 · Stone</small><b id="challenge-title">Test 1 of 10</b></span>
+        <span class="challenge-goal"><b id="challenge-wpm">0</b><small>wpm goal</small></span>
+        <span class="challenge-goal"><b id="challenge-acc">0</b><small>% accuracy</small></span>
+        <button class="pill btn" id="challenge-exit" type="button">free mode</button>
+      </div>
+      <div class="config glass" id="config">
+        <div class="cfg-group">
+          <button class="pill btn" data-toggle="punctuation" type="button">punctuation</button>
+          <button class="pill btn" data-toggle="numbers" type="button">numbers</button>
+        </div>
+        <span class="cfg-sep"></span>
+        <div class="cfg-group">
+          <button class="pill btn" data-mode="time" type="button">time</button>
+          <button class="pill btn" data-mode="words" type="button">words</button>
+        </div>
+        <span class="cfg-sep"></span>
+        <div class="cfg-group" id="amounts"></div>
+        <span class="cfg-sep"></span>
+        <div class="cfg-group">
+          <button class="pill btn" id="sound-btn" type="button" title="Change key sound">thock</button>
+          <input class="vol" id="volume" type="range" min="0" max="1" step="0.05" aria-label="Volume">
+          <button class="pill btn" id="theme-btn" type="button" title="Change theme">dusk</button>
+          <button class="pill btn" data-toggle="keyboard" type="button" title="Show keyboard">keys</button>
+        </div>
+      </div>
+
+      <div class="type-card glass">
+        <div class="live" id="live">
+          <div class="live-counter" id="live-counter">30</div>
+          <div class="live-stat"><span id="live-wpm">0</span><small>wpm</small></div>
+          <div class="live-stat"><span id="live-acc">100</span><small>acc</small></div>
+          <div class="combo" id="combo">
+            <div class="combo-fill" id="combo-fill"></div>
+            <span class="combo-text">combo <b id="combo-count">0</b></span>
+            <span class="combo-mult" id="combo-mult">x1</span>
+          </div>
+        </div>
+
+        <div class="typing-area" id="typing-area">
+          <div class="focus-hint" id="focus-hint">Click here or press any key to focus</div>
+          <div class="words-wrap" id="words-wrap">
+            <div class="words" id="words"></div>
+            <div class="caret" id="caret"></div>
+          </div>
+          <input class="hidden-input" id="hidden-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Typing input">
+        </div>
+      </div>
+
+      <div class="under-typing">
+        <button class="restart btn" id="restart" type="button" aria-label="Restart test">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg>
+        </button>
+        <p class="hint"><kbd>tab</kbd> restart &nbsp;·&nbsp; <kbd>esc</kbd> reset &nbsp;·&nbsp; <kbd>ctrl</kbd> + <kbd>⌫</kbd> delete word</p>
+      </div>
+
+      <div class="keyboard" id="keyboard" aria-hidden="true"></div>
+    </section>
+
+    <!-- RESULTS VIEW -->
+    <section class="view" id="view-results" aria-label="Results">
+      <div class="results">
+        <div class="res-main glass">
+          <div class="big-stat"><small>wpm</small><span id="r-wpm">0</span></div>
+          <div class="big-stat"><small>accuracy</small><span id="r-acc">0</span><em>%</em></div>
+          <div class="pb-flag" id="pb-flag">New personal best</div>
+        </div>
+        <div class="res-chart glass">
+          <div class="chart-legend"><span class="lg-wpm">wpm</span><span class="lg-raw">raw</span><span class="lg-err">errors</span></div>
+          <div class="chart-box">
+            <canvas id="chart"></canvas>
+            <div class="chart-tip" id="chart-tip"></div>
+          </div>
+        </div>
+        <div class="res-stats">
+          <div class="stat-card glass"><small>raw</small><b id="r-raw">0</b></div>
+          <div class="stat-card glass"><small>consistency</small><b id="r-cons">0%</b><div class="cons-ring"><i id="r-cons-bar"></i></div></div>
+          <div class="stat-card glass"><small>characters</small><b id="r-chars">0/0/0/0</b><span class="tiny">correct / wrong / extra / missed</span></div>
+          <div class="stat-card glass"><small>time</small><b id="r-time">0s</b></div>
+          <div class="stat-card glass"><small>test</small><b id="r-mode">time 30</b></div>
+        </div>
+        <div class="res-rank glass" id="res-rank">
+          <div class="res-badge" id="res-badge"></div>
+          <div class="res-rank-info">
+            <small>rank</small>
+            <h3 id="res-rank-label">Stone III</h3>
+            <div class="rp-bar"><i id="res-rp-bar"></i><span class="rp-ghost" id="res-rp-ghost"></span></div>
+            <div class="rp-row"><span id="res-rp-text">0 / 100 RP</span><b class="rp-delta" id="res-rp-delta">+0</b></div>
+            <p class="next-rank" id="res-next">Next: Stone II</p>
+          </div>
+        </div>
+        <div class="res-level glass" id="res-level" hidden>
+          <span class="res-level-badge" id="res-level-badge"></span>
+          <div class="res-level-info">
+            <small id="res-level-kicker">Level 1 · Stone</small>
+            <h3 id="res-level-title">Test cleared</h3>
+            <p id="res-level-text"></p>
+            <div class="level-dots" id="res-level-dots"></div>
+          </div>
+        </div>
+        <div class="res-actions">
+          <button class="launch btn" id="next-test" type="button">Next test <kbd>tab</kbd></button>
+          <button class="ghost btn" id="retry-test" type="button">Repeat these words</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RANKS VIEW -->
+    <section class="view" id="view-ranks" aria-label="Ranks">
+      <div class="ranks-hero glass">
+        <div class="hero-badge" id="hero-badge"></div>
+        <div>
+          <small>your rank</small>
+          <h2 id="hero-label">Stone III</h2>
+          <div class="rp-bar big"><i id="hero-bar"></i></div>
+          <p id="hero-text">0 RP</p>
+          <p class="hint">Beat your tier's target speed to climb. Accuracy counts double and longer tests are worth more.</p>
+        </div>
+      </div>
+      <div class="rank-grid" id="rank-grid"></div>
+    </section>
+
+    <!-- PROFILE VIEW -->
+    <section class="view" id="view-profile" aria-label="Profile">
+      <div class="profile-grid">
+        <div class="stat-card glass"><small>tests completed</small><b id="p-tests">0</b></div>
+        <div class="stat-card glass"><small>best wpm</small><b id="p-best">0</b></div>
+        <div class="stat-card glass"><small>average (last 10)</small><b id="p-avg">0</b></div>
+        <div class="stat-card glass"><small>average accuracy</small><b id="p-acc">0%</b></div>
+      </div>
+      <div class="glass profile-chart">
+        <h3>Recent tests</h3>
+        <div class="chart-box"><canvas id="p-chart"></canvas><div class="chart-tip" id="p-chart-tip"></div></div>
+      </div>
+      <div class="glass">
+        <h3>Personal bests</h3>
+        <div class="pb-list" id="pb-list"></div>
+      </div>
+      <div class="glass">
+        <h3>History</h3>
+        <div class="history" id="history"></div>
+        <button class="ghost btn danger" id="reset-profile" type="button">Reset all progress</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Rank up / badge preview overlay -->
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
+    <div class="overlay-card glass">
+      <div class="overlay-glow"></div>
+      <p class="overlay-kicker" id="overlay-kicker">rank up</p>
+      <div class="overlay-badge" id="overlay-badge"></div>
+      <h2 id="overlay-title">Bronze III</h2>
+      <p class="overlay-sub" id="overlay-sub">Target speed 25 wpm</p>
+      <button class="launch btn" id="overlay-close" type="button">Continue</button>
+    </div>
+  </div>
+
+  <footer class="footer">Keyblaze · progress is saved in this browser only</footer>
+
+  <script src="js/words.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/emblems.js"></script>
+  <script src="js/ranks.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/fx.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/scene.js"></script>
+  <script src="js/trail.js"></script>
+  <script src="js/splash-cursor.js"></script>
+  <script src="js/typing.js"></script>
+  <script src="js/views.js"></script>
+  <script src="js/home.js"></script>
+  <script src="js/difficulty.js"></script>
+  <script src="js/app.js"></script>
+  <script type="module" src="js/flex-carousel.js"></script>
+</body>
+</html>
