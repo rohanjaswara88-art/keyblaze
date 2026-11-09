@@ -524,7 +524,9 @@
     root.TT.scene.init();
     water = root.TT.trail.init($('scene-gl'), null, { paint: false });
     const lite = Boolean(root.TT.perf && root.TT.perf.lite);
-    splashCursor = root.TT.createSplashCursor({
+    // On touch screens every tap and scroll would splash ink, which gets in the way, so phones go without.
+    const touchOnly = root.matchMedia('(hover: none) and (pointer: coarse)').matches;
+    splashCursor = touchOnly ? null : root.TT.createSplashCursor({
       quality: lite ? 'low' : 'high', // phones get a coarser, much cheaper fluid simulation
       rainbow: false,
       colors: [cssVar('--splash') || '#a78bfa'],

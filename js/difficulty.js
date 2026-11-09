@@ -12,6 +12,8 @@
   const SWEEP_EVERY = 6;     // seconds between light sweeps
   const SWEEP_TIME = 1.6;    // seconds a sweep takes
   const MODULE_TIMEOUT_MS = 6000;
+  const NARROW_PX = 700;          // below this the carousel uses its phone layout
+  const RESIZE_DEBOUNCE_MS = 150;
   const $ = (id) => document.getElementById(id);
 
   const pad2 = (n) => String(n).padStart(2, '0');
@@ -268,17 +270,33 @@
         `<button type="button" class="fallback-card btn" data-level="${i}"><img src="${item.src}" alt="${escapeHtml(item.alt)}"></button>`).join('');
     }
 
+    /**
+     * Card size and glass shape for the current width. On a narrow screen the default glass edge
+     * would run through the middle card and warp it, so phones get smaller cards and a wide,
+     * gentle lens: the centre card stays flat and only the neighbours curve away.
+     */
+    function layoutOptions() {
+      const narrow = $('flex-carousel').clientWidth < NARROW_PX;
+      const lens = narrow
+        ? { lensWidth: 1.25, lensHeight: 1.5, tilt: 0, roundness: 1, bend: 0.2, reach: 0.32, curl: 'rise' }
+        : { lensWidth: undefined, lensHeight: undefined, tilt: undefined, roundness: undefined, bend: undefined, reach: undefined, curl: undefined };
+      return {
+        ...lens,
+        cardHeight: narrow ? 0.54 : 0.62,
+        gap: narrow ? 12 : 18,
+        radius: narrow ? 14 : 18,
+        dispersion: LITE || narrow ? 0 : undefined, // the rainbow split costs 12 texture reads per pixel
+      };
+    }
+
     function mountCarousel() {
       if (carousel || !root.TT.createFlexCarousel) return;
       carousel = root.TT.createFlexCarousel($('flex-carousel'), {
         items,
         preset: 'liquid',
         intro: 'rise',
-        cardHeight: 0.62,
         maxDpr: LITE ? 1.5 : 2,
-        dispersion: LITE ? 0 : undefined, // the rainbow split costs 12 texture reads per pixel
-        gap: 18,
-        radius: 18,
+        ...layoutOptions(),
         squeeze: 0.2,
         focusOnClick: true,
         captions: true,
@@ -286,7 +304,15 @@
         onChange: (index) => renderPanel(index),
         onSelect: (index) => choose(index),
       });
-      if (!carousel) mountFallback();
+      if (!carousel) {
+        mountFallback();
+        return;
+      }
+      let resizeTimer = null;
+      root.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => carousel.update(layoutOptions()), RESIZE_DEBOUNCE_MS);
+      });
     }
 
     async function init() {
