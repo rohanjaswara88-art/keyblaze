@@ -1,5 +1,7 @@
 # Keyblaze
 
+### ▶ [Play it live: rohanjaswara88-art.github.io/keyblaze](https://rohanjaswara88-art.github.io/keyblaze/)
+
 A calm, satisfying typing speed test: live WPM, a consistency graph, sound packs, a 37-step rank ladder with
 animated emblems, and 13 difficulty levels with 10 tests each.
 
