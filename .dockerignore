@@ -1,0 +1,11 @@
+.git
+.github
+.claude
+.vscode
+.idea
+**/node_modules
+server/data
+server/test
+tests
+*.log
+README.md

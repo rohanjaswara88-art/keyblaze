@@ -2,7 +2,7 @@
 (function (root) {
   'use strict';
 
-  const { ranks: Ranks, sound: Sound, fx: Fx, storage: Storage, views: Views, levels: Levels } = root.TT;
+  const { ranks: Ranks, sound: Sound, fx: Fx, storage: Storage, views: Views, levels: Levels, api: Api } = root.TT;
   const $ = (id) => document.getElementById(id);
 
   const AMOUNTS = { time: [15, 30, 60, 120], words: [10, 25, 50, 100] };
@@ -20,6 +20,9 @@
   let difficulty = null; // landing page level picker
   let challenge = null; // { level, index, config } while playing a level test
   let lastPassed = false;
+  const account = root.TT.account.create({ api: Api });
+  const leaderboard = root.TT.leaderboard.create({ api: Api, currentUser: account.username });
+  const race = root.TT.race.create({ api: Api, sound: Sound, fx: Fx });
 
   const typingArea = $('typing-area');
   const hiddenInput = $('hidden-input');
@@ -237,10 +240,12 @@
     const delta = Ranks.ratingDelta(result, rpBefore);
     const bestKey = `${config.mode}-${config.amount}`;
     const isPb = result.wpm > 0 && result.wpm > (profile.best[bestKey] || 0) && profile.history.length > 0;
-    persist(Storage.withResult(profile, {
+    const entry = {
       wpm: result.wpm, raw: result.raw, acc: result.accuracy, cons: result.consistency,
       mode: config.mode, amount: config.amount, delta, ts: Date.now(),
-    }));
+    };
+    persist(Storage.withResult(profile, entry));
+    account.recordResult(entry); // runs in the background; a failed upload never blocks the results screen
     const levelOutcome = challenge ? recordLevel(result) : null;
 
     Sound.finish();
@@ -306,6 +311,8 @@
     if (name === 'home' && difficulty) difficulty.refresh();
     if (name === 'ranks') Views.renderRanks(profile.rp);
     if (name === 'profile') Views.renderProfile(profile);
+    if (name === 'leaders') leaderboard.show();
+    if (name === 'race') race.show();
     if (name === 'type') {
       requestAnimationFrame(() => test.moveCaret());
       focusTyping();
@@ -557,6 +564,7 @@
       startTest: startLevel,
     });
     bindClicks();
+    account.init();
     bindSheen();
     bindReveal();
     bindScroll();
@@ -571,7 +579,7 @@
     root.addEventListener('resize', () => test.moveCaret());
     if (document.fonts) document.fonts.ready.then(() => test.moveCaret());
     newTest();
-    showView('home');
+    showView(race.joinFromUrl() ? 'race' : 'home'); // an invite link opens straight into its race
   }
 
   init();

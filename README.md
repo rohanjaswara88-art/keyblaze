@@ -16,9 +16,110 @@ animated emblems, and 13 difficulty levels with 10 tests each.
   UI and a violet nebula theme (plus four landscape themes).
 - **Fast on phones**: a lite mode switches on automatically on phones and low-end devices.
 
-Progress is saved in your browser (localStorage). There is no account and no server.
+- **Accounts (optional)**: sign up to save every test to your account. Without the server the game runs in
+  guest mode and keeps progress in the browser (localStorage), as on the GitHub Pages site.
+- **Leaderboards**: each player's best run for every standard test, for today, this week or all time.
+- **Live races**: quick match with whoever is waiting, or a private race with a 5-letter code and an invite link.
+  Up to 5 racers see each other's progress live, and the server decides places and speeds.
 
-## Run it
+## How it fits together
+
+```
+ browser (index.html + js/)                     server/ (Node 24)
+ ──────────────────────────                     ─────────────────────────────────────────
+ game, stats, ranks (local)                     Express 5
+ api.js ──── fetch /api/* (JSON) ────────────▶  routes.js → validate.js → db.js → SQLite
+ race.js ─── Socket.IO (WebSocket) ──────────▶  race/server.js (rooms, timers)
+                                                   └─ race/room.js (pure race rules)
+```
+
+The browser never decides anything that matters for fairness. It reports how far the player has typed, and
+the server checks it against its own clock, rejects impossible speeds, and assigns places.
+
+## Run it with accounts
+
+The `server/` folder is a Node API (Express 5) that also serves the site. It needs Node 22.13 or newer and
+stores data in SQLite through Node's built-in `node:sqlite`, so there is no database to install.
+
+```bash
+cd server
+npm install
+npm start
+```
+
+Then open http://localhost:3000.
+
+| Variable | Default | What it does |
+|---|---|---|
+| `PORT` | `3000` | Port to listen on |
+| `DATABASE_PATH` | `server/data/keyblaze.db` | SQLite file |
+| `NODE_ENV` | | Set to `production` behind HTTPS: secure cookies and the real client IP for rate limits |
+
+### API
+
+Every response is `{ "ok": true, "data": ... }` or `{ "ok": false, "error": "..." }`.
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/api/health` | | Health check |
+| POST | `/api/auth/register` | | Create an account `{ username, password }` and sign in |
+| POST | `/api/auth/login` | | Sign in |
+| POST | `/api/auth/logout` | | Sign out |
+| GET | `/api/me` | | The signed-in user, or `null` |
+| POST | `/api/results` | yes | Save a finished test `{ wpm, raw, acc, cons, mode, amount }` |
+| GET | `/api/results?limit=50` | yes | Your results, newest first, plus a summary |
+| GET | `/api/leaderboard?mode=time&amount=30&period=week` | | Best run per player; period is `day`, `week` or `all` |
+
+### Races (Socket.IO)
+
+Every client event takes an acknowledgement callback that receives `{ ok, code? }` or `{ ok: false, error }`.
+
+| Client sends | What it does |
+|---|---|
+| `race:quick` | Join a public room that is waiting, or open one. It starts 8 s after a second racer arrives |
+| `race:create` | Open a private room and get its code |
+| `race:join` `{ code }` | Join a room by code |
+| `race:start` | Host only: 3 s countdown, then the race |
+| `race:progress` `{ chars }` | Characters typed correctly so far |
+| `race:again` | Host only, after a race: same room, new passage |
+| `race:leave` | Leave the room |
+
+The server sends `race:hello` `{ name }` on connect and `race:state` (the whole room) after every change. A
+race ends when everyone still in it has finished, or after two minutes.
+
+### Security
+
+- Passwords are hashed with scrypt and a random salt. Login fails the same way, in about the same time,
+  whether or not the username exists.
+- Sessions are random tokens in an `HttpOnly`, `SameSite=Lax` cookie. The database stores only a SHA-256 hash
+  of each token.
+- Writes from other sites are refused (an `Origin` check), and request bodies are limited to 10 KB.
+- Login and register are rate limited to 10 a minute per IP, and saving results to 30 a minute.
+- Results are checked on the server: impossible speeds (over 350 wpm), wpm above raw speed, and accuracy
+  outside 0 to 100 are rejected.
+- Only `index.html`, `og-image.png`, `css/` and `js/` are served; the server code and repo files never are.
+- Races are timed by the server. Progress faster than 350 wpm, progress that goes backwards, and progress past
+  the end of the passage are all rejected. Each socket may send 20 events a second, there are at most 500
+  rooms, and WebSocket connections from other sites are refused.
+- Players are shown by name only; socket ids never leave the server.
+
+## Docker
+
+```bash
+docker build -t keyblaze .
+docker run -p 3000:3000 -v keyblaze-data:/data keyblaze
+```
+
+The image runs as a non-root user, keeps the SQLite file in the `/data` volume, and has a health check on
+`/api/health`. To host it, use any platform that runs a container with a persistent disk (for example Fly.io
+or Railway). SQLite needs that disk; a platform without one would wipe accounts on every deploy.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `main` and every pull request: both test suites, then a
+Docker build that starts the container and waits for the health check to pass.
+
+## Run it as a static site
 
 It is plain HTML, CSS and JavaScript with no build step. Serve the folder with any static server:
 
@@ -39,10 +140,18 @@ internet connection. Without it the badges fall back to a plain row of cards.
 
 ## Tests
 
-The rating, stats, word and level logic is pure JavaScript with tests for Node's built-in runner:
+The rating, stats, word, level, API client and race progress logic is pure JavaScript with tests for Node's built-in runner:
 
 ```bash
 node --test tests/*.test.js
+```
+
+The server has its own tests: the race rules as pure functions, plus integration tests that start the server
+on a free port with an in-memory database and race real Socket.IO clients against it:
+
+```bash
+cd server
+npm test
 ```
 
 ## Credits

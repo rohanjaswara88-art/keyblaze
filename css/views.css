@@ -162,3 +162,30 @@
   .h-row { font-size: 11px; padding: 8px; }
   .res-actions { flex-direction: column; align-items: stretch; }
 }
+
+/* ================= Account ================= */
+.view > .account { margin-top: 0; margin-bottom: 16px; }
+.account[hidden], .account [hidden] { display: none !important; }
+.account-lead { margin: 0 0 16px; color: var(--text-dim); font-size: 14px; max-width: 52ch; }
+.account-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; align-items: end; }
+.account-form label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-dim); }
+.account-form input {
+  font: inherit; font-size: 15px; color: var(--text); padding: 12px 16px; border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); outline: none;
+}
+.account-form input:focus-visible { border-color: var(--accent-2); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08); }
+.account-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 12px; }
+.account-actions .launch, .account-actions .ghost { padding: 12px 26px; }
+.account-error { grid-column: 1 / -1; margin: 0; color: var(--error); font-size: 14px; }
+.account-in { display: flex; flex-wrap: wrap; align-items: center; gap: 20px 32px; }
+.account-in h3 { margin-bottom: 6px !important; }
+.account-who { margin: 0; font-size: 18px; }
+.account-who b { font-weight: 500; }
+.account-stats { display: flex; gap: 28px; margin-left: auto; font-family: var(--mono); }
+.account-stats small { display: block; color: var(--text-dim); font-family: var(--sans); font-size: 12px; margin-bottom: 2px; }
+.account-stats b { font-size: 22px; font-weight: 300; }
+.account-in .ghost { padding: 11px 22px; }
+@media (max-width: 640px) {
+  .account-form { grid-template-columns: 1fr; }
+  .account-stats { margin-left: 0; }
+}

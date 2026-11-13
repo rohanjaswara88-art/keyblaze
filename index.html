@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="css/home.css">
   <link rel="stylesheet" href="css/typing.css">
   <link rel="stylesheet" href="css/views.css">
+  <link rel="stylesheet" href="css/race.css">
   <link rel="stylesheet" href="css/splash-cursor.css">
   <link rel="stylesheet" href="css/flex-carousel.css">
   <link rel="stylesheet" href="css/difficulty.css">
@@ -56,6 +57,8 @@
     <nav class="nav" aria-label="Main">
       <button class="nav-btn btn" data-view="home" type="button">Home</button>
       <button class="nav-btn btn" data-view="type" type="button">Test</button>
+      <button class="nav-btn btn" data-view="race" type="button">Race</button>
+      <button class="nav-btn btn" data-view="leaders" type="button">Leaders</button>
       <button class="nav-btn btn" data-view="ranks" type="button">Ranks</button>
       <button class="nav-btn btn" data-view="profile" type="button">Profile</button>
     </nav>
@@ -207,7 +210,7 @@
 
       <footer class="site-footer">
         <div class="foot-brand"><span class="brand-mark">Keyblaze</span><p>A calm place to get fast.</p></div>
-        <div class="foot-col"><b>Product</b><button class="link" data-view="type" type="button">Typing test</button><button class="link" data-view="ranks" type="button">Ranks</button><button class="link" data-view="profile" type="button">Profile</button></div>
+        <div class="foot-col"><b>Product</b><button class="link" data-view="type" type="button">Typing test</button><button class="link" data-view="race" type="button">Race</button><button class="link" data-view="leaders" type="button">Leaderboard</button><button class="link" data-view="ranks" type="button">Ranks</button><button class="link" data-view="profile" type="button">Profile</button></div>
         <div class="foot-col"><b>Modes</b><span>Time 15 · 30 · 60 · 120</span><span>Words 10 · 25 · 50 · 100</span><span>Punctuation &amp; numbers</span></div>
       </footer>
     </section>
@@ -337,8 +340,92 @@
       <div class="rank-grid" id="rank-grid"></div>
     </section>
 
+    <!-- RACE VIEW -->
+    <section class="view" id="view-race" aria-label="Race">
+      <div class="glass race-offline" id="race-offline" hidden>
+        <h3>Race</h3>
+        <p class="empty">Live races need the Keyblaze server. Run it locally (see the README) to race your friends.</p>
+      </div>
+      <div class="glass race-lobby" id="race-lobby" hidden>
+        <h3>Race</h3>
+        <h2 class="race-title">Type against friends, live.</h2>
+        <p class="account-lead">Quick match pairs you with whoever is waiting. A private race gives you a code to share.</p>
+        <div class="race-actions">
+          <button class="launch btn" id="race-quick" type="button">Quick match</button>
+          <button class="ghost btn" id="race-create" type="button">Create private race</button>
+        </div>
+        <form class="race-join" id="race-join-form">
+          <input id="race-code" placeholder="race code" maxlength="5" autocomplete="off" spellcheck="false" autocapitalize="characters" aria-label="Race code">
+          <button class="ghost btn" type="submit">Join</button>
+        </form>
+        <p class="race-name">You race as <b id="race-name">…</b></p>
+      </div>
+      <p class="account-error race-error" id="race-error" role="alert" hidden></p>
+      <div class="race-room" id="race-room" hidden>
+        <div class="glass race-bar">
+          <div class="race-code"><small>race code</small><b id="race-code-label"></b></div>
+          <span class="race-status" id="race-status"></span>
+          <div class="race-buttons">
+            <button class="pill btn" id="race-copy" type="button">copy invite link</button>
+            <button class="launch btn" id="race-start" type="button">Start race</button>
+            <button class="launch btn" id="race-again" type="button">Race again</button>
+            <button class="ghost btn" id="race-leave" type="button">Leave</button>
+          </div>
+        </div>
+        <div class="glass race-lanes" id="race-lanes"></div>
+        <div class="glass race-track">
+          <div class="race-text" id="race-text"></div>
+          <input class="race-input" id="race-input" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" aria-label="Type the race text" disabled>
+          <p class="race-hint" id="race-hint"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- LEADERBOARD VIEW -->
+    <section class="view" id="view-leaders" aria-label="Leaderboard">
+      <div class="glass board">
+        <div class="board-head">
+          <h3>Leaderboard</h3>
+          <div class="board-filters">
+            <div class="cfg-group" id="board-modes"></div>
+            <span class="cfg-sep"></span>
+            <div class="cfg-group" id="board-amounts"></div>
+            <span class="cfg-sep"></span>
+            <div class="cfg-group" id="board-periods"></div>
+          </div>
+        </div>
+        <div class="board-body" id="board-body"></div>
+      </div>
+    </section>
+
     <!-- PROFILE VIEW -->
     <section class="view" id="view-profile" aria-label="Profile">
+      <div class="glass account" id="account" hidden>
+        <div id="account-signed-out">
+          <h3>Account</h3>
+          <p class="account-lead">Sign in to save every test to your account and keep your history on any device.</p>
+          <form class="account-form" id="account-form" novalidate>
+            <label><span>Username</span><input id="account-username" name="username" autocomplete="username" maxlength="20" spellcheck="false" autocapitalize="off" required></label>
+            <label><span>Password</span><input id="account-password" name="password" type="password" autocomplete="current-password" maxlength="128" required></label>
+            <div class="account-actions">
+              <button class="launch btn" type="submit" value="login">Sign in</button>
+              <button class="ghost btn" type="submit" value="register">Create account</button>
+            </div>
+            <p class="account-error" id="account-error" role="alert" hidden></p>
+          </form>
+        </div>
+        <div class="account-in" id="account-signed-in" hidden>
+          <div>
+            <h3>Account</h3>
+            <p class="account-who">Signed in as <b id="account-name"></b></p>
+          </div>
+          <div class="account-stats">
+            <div><small>saved tests</small><b id="account-tests">0</b></div>
+            <div><small>best wpm</small><b id="account-best">0</b></div>
+          </div>
+          <button class="ghost btn" id="account-logout" type="button">Sign out</button>
+        </div>
+      </div>
       <div class="profile-grid">
         <div class="stat-card glass"><small>tests completed</small><b id="p-tests">0</b></div>
         <div class="stat-card glass"><small>best wpm</small><b id="p-best">0</b></div>
@@ -373,7 +460,7 @@
     </div>
   </div>
 
-  <footer class="footer">Keyblaze · progress is saved in this browser only</footer>
+  <footer class="footer" id="site-footer">Keyblaze · progress is saved in this browser only</footer>
 
   <script src="js/words.js"></script>
   <script src="js/stats.js"></script>
@@ -383,6 +470,10 @@
   <script src="js/fx.js"></script>
   <script src="js/chart.js"></script>
   <script src="js/storage.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/account.js"></script>
+  <script src="js/leaderboard.js"></script>
+  <script src="js/race.js"></script>
   <script src="js/levels.js"></script>
   <script src="js/scene.js"></script>
   <script src="js/trail.js"></script>
