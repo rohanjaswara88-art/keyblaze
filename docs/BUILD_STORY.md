@@ -6,6 +6,8 @@ the problems found along the way and how each was solved.
 
 - **Live app:** https://keyblaze.onrender.com (accounts, leaderboards, live races)
 - **Guest version:** https://rohanjaswara88-art.github.io/keyblaze/ (the game only, no server)
+- **Visual explainer:** https://rohanjaswara88-art.github.io/keyblaze/docs/explainer.html (this story in two
+  minutes)
 
 ## Where everything runs
 

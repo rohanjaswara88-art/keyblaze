@@ -5,7 +5,9 @@
 Guest-only version without the server: [rohanjaswara88-art.github.io/keyblaze](https://rohanjaswara88-art.github.io/keyblaze/).
 The free server sleeps when idle, so the first visit can take about a minute to wake it.
 
-How it was built, phase by phase, and the problems solved along the way: [docs/BUILD_STORY.md](docs/BUILD_STORY.md).
+How it was built, phase by phase, and the problems solved along the way:
+[watch the 2-minute visual explainer](https://rohanjaswara88-art.github.io/keyblaze/docs/explainer.html) or
+read [docs/BUILD_STORY.md](docs/BUILD_STORY.md).
 
 A calm, satisfying typing speed test: live WPM, a consistency graph, sound packs, a 37-step rank ladder with
 animated emblems, and 13 difficulty levels with 10 tests each.
