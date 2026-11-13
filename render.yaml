@@ -1,0 +1,15 @@
+# Render Blueprint: Render reads this file to create the web service.
+# The database is Neon (free Postgres); paste its connection string as DATABASE_URL when Render asks.
+services:
+  - type: web
+    name: keyblaze
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false # a secret: entered in the Render dashboard, never stored in this repo

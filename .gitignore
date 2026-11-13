@@ -10,3 +10,6 @@ Thumbs.db
 # Dependencies and logs, if any tooling is added later
 node_modules/
 *.log
+
+# Local database for the API server
+server/data/

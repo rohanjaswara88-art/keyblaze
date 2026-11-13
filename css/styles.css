@@ -284,7 +284,7 @@ body:not(.on-home) .scene *::after { animation-play-state: paused !important; }
   font-family: var(--display); font-weight: 400;
 }
 .hero-title em, .section-title em, .overlay-card h2 em { font-style: italic; color: var(--text); }
-.nav { display: flex; gap: 8px; }
+.nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .nav-btn {
   padding: 8px 16px; border-radius: 999px; font-size: 13px; color: var(--text-dim);
   background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.07);
