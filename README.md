@@ -54,7 +54,7 @@ Then open http://localhost:3000.
 | Variable | Default | What it does |
 |---|---|---|
 | `PORT` | `3000` | Port to listen on |
-| `DATABASE_URL` | | Postgres connection string. Required in production; when unset, PGlite is used |
+| `DATABASE_URL` | | Postgres connection string. Required in production; when unset, PGlite is used. `npm start` reads it from `.env.local` or `.env` in the repo root (both git-ignored), which `neon init` fills in |
 | `DATA_DIR` | `server/data/pglite` | Where local PGlite keeps its data |
 | `NODE_ENV` | | Set to `production` behind HTTPS: secure cookies, the real client IP for rate limits, and `DATABASE_URL` required |
 

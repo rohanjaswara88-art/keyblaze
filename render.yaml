@@ -5,7 +5,7 @@ services:
     name: keyblaze
     runtime: docker
     plan: free
-    region: oregon
+    region: singapore # next to the Neon database (AWS ap-southeast-1), closest to India
     branch: main
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health

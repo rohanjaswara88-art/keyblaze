@@ -13,3 +13,9 @@ node_modules/
 
 # Local database for the API server
 server/data/
+
+# Secrets: database connection strings and other env files (never commit these)
+.env
+.env.*
+!.env.example
+.neon
