@@ -6,7 +6,7 @@ import { createApp } from '../src/app.js';
 
 /** Starts the app on a free port with a fresh in-memory database. */
 async function startServer(rateLimits = { auth: 1000, results: 1000 }) {
-  const db = openDb(':memory:');
+  const db = await openDb();
   const app = createApp({ db, rateLimits });
   const server = await new Promise((resolve) => {
     const s = app.listen(0, () => resolve(s));
@@ -16,7 +16,7 @@ async function startServer(rateLimits = { auth: 1000, results: 1000 }) {
     base,
     async stop() {
       await new Promise((resolve) => server.close(resolve));
-      db.close();
+      await db.close();
     },
   };
 }
@@ -190,7 +190,7 @@ describe('Keyblaze API', () => {
 
 describe('static site', () => {
   test('serves the game but never the server code or repo files', async () => {
-    const db = openDb(':memory:');
+    const db = await openDb();
     const siteDir = fileURLToPath(new URL('../..', import.meta.url));
     const server = await new Promise((resolve) => {
       const s = createApp({ db, siteDir }).listen(0, () => resolve(s));
@@ -207,7 +207,7 @@ describe('static site', () => {
       assert.equal(await status('/README.md'), 404);
     } finally {
       await new Promise((resolve) => server.close(resolve));
-      db.close();
+      await db.close();
     }
   });
 });

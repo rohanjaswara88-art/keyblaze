@@ -28,10 +28,10 @@ export function clearSessionCookie(res, secure) {
 
 /** Sets req.user (or null) and req.sessionHash from the cookie. */
 export function loadUser(db) {
-  return (req, _res, next) => {
+  return async (req, _res, next) => {
     const token = readCookie(req, COOKIE_NAME);
     req.sessionHash = token ? hashToken(token) : null;
-    req.user = req.sessionHash ? db.userForSession(req.sessionHash) : null;
+    req.user = req.sessionHash ? await db.userForSession(req.sessionHash) : null;
     next();
   };
 }

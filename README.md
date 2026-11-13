@@ -15,7 +15,6 @@ animated emblems, and 13 difficulty levels with 10 tests each.
 - **Feel**: synthesized key sounds (thock, click, bubble, typewriter, pop), a fluid splash cursor, liquid glass
   UI and a violet nebula theme (plus four landscape themes).
 - **Fast on phones**: a lite mode switches on automatically on phones and low-end devices.
-
 - **Accounts (optional)**: sign up to save every test to your account. Without the server the game runs in
   guest mode and keeps progress in the browser (localStorage), as on the GitHub Pages site.
 - **Leaderboards**: each player's best run for every standard test, for today, this week or all time.
@@ -28,7 +27,7 @@ animated emblems, and 13 difficulty levels with 10 tests each.
  browser (index.html + js/)                     server/ (Node 24)
  ──────────────────────────                     ─────────────────────────────────────────
  game, stats, ranks (local)                     Express 5
- api.js ──── fetch /api/* (JSON) ────────────▶  routes.js → validate.js → db.js → SQLite
+ api.js ──── fetch /api/* (JSON) ────────────▶  routes.js → validate.js → db.js → Postgres
  race.js ─── Socket.IO (WebSocket) ──────────▶  race/server.js (rooms, timers)
                                                    └─ race/room.js (pure race rules)
 ```
@@ -38,8 +37,11 @@ the server checks it against its own clock, rejects impossible speeds, and assig
 
 ## Run it with accounts
 
-The `server/` folder is a Node API (Express 5) that also serves the site. It needs Node 22.13 or newer and
-stores data in SQLite through Node's built-in `node:sqlite`, so there is no database to install.
+The `server/` folder is a Node API (Express 5) that also serves the site. It needs Node 22 or newer.
+
+The database is Postgres. In production that is a real Postgres server (Neon). Locally and in the tests it is
+[PGlite](https://pglite.dev), Postgres compiled to WebAssembly that runs inside Node, so the same SQL runs
+everywhere and there is still nothing to install.
 
 ```bash
 cd server
@@ -52,8 +54,9 @@ Then open http://localhost:3000.
 | Variable | Default | What it does |
 |---|---|---|
 | `PORT` | `3000` | Port to listen on |
-| `DATABASE_PATH` | `server/data/keyblaze.db` | SQLite file |
-| `NODE_ENV` | | Set to `production` behind HTTPS: secure cookies and the real client IP for rate limits |
+| `DATABASE_URL` | | Postgres connection string. Required in production; when unset, PGlite is used |
+| `DATA_DIR` | `server/data/pglite` | Where local PGlite keeps its data |
+| `NODE_ENV` | | Set to `production` behind HTTPS: secure cookies, the real client IP for rate limits, and `DATABASE_URL` required |
 
 ### API
 
@@ -107,17 +110,26 @@ race ends when everyone still in it has finished, or after two minutes.
 
 ```bash
 docker build -t keyblaze .
-docker run -p 3000:3000 -v keyblaze-data:/data keyblaze
+docker run -p 3000:3000 -e DATABASE_URL=postgres://user:password@host:5432/db keyblaze
 ```
 
-The image runs as a non-root user, keeps the SQLite file in the `/data` volume, and has a health check on
-`/api/health`. To host it, use any platform that runs a container with a persistent disk (for example Fly.io
-or Railway). SQLite needs that disk; a platform without one would wipe accounts on every deploy.
+The image runs as a non-root user and has a health check on `/api/health`.
+
+## Deploy (Render + Neon, both free)
+
+1. **Database:** create a free project on [Neon](https://neon.tech) and copy its connection string
+   (`postgresql://…?sslmode=require`). The server creates its tables on first start.
+2. **Server:** on [Render](https://render.com), choose **New → Blueprint**, pick this repository, and paste the
+   Neon string when it asks for `DATABASE_URL`. `render.yaml` sets up the rest (Docker, health check, deploy on
+   every push to `main`).
+
+Render's free plan sleeps after 15 minutes without visitors, so the first visit after that takes about a
+minute to wake it. The data is safe in Neon either way.
 
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs on every push to `main` and every pull request: both test suites, then a
-Docker build that starts the container and waits for the health check to pass.
+Docker build that starts the container against a throwaway Postgres and creates an account through the API.
 
 ## Run it as a static site
 
@@ -147,7 +159,7 @@ node --test tests/*.test.js
 ```
 
 The server has its own tests: the race rules as pure functions, plus integration tests that start the server
-on a free port with an in-memory database and race real Socket.IO clients against it:
+on a free port with an in-memory Postgres (PGlite) and race real Socket.IO clients against it:
 
 ```bash
 cd server

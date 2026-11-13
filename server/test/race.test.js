@@ -8,7 +8,7 @@ import { attachRaceServer } from '../src/race/server.js';
 const TEXT_WORDS = ['ab', 'cd']; // "ab cd": 5 characters, so a test race finishes almost at once
 
 async function startServer(options) {
-  const db = openDb(':memory:');
+  const db = await openDb();
   const server = await new Promise((resolve) => {
     const s = createApp({ db }).listen(0, () => resolve(s));
   });
@@ -35,7 +35,7 @@ async function startServer(options) {
     async stop() {
       sockets.forEach((s) => s.disconnect());
       await races.close(); // also closes the HTTP server
-      db.close();
+      await db.close();
     },
   };
 }

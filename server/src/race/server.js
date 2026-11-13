@@ -170,12 +170,17 @@ export function attachRaceServer(httpServer, { db, makeWords, options = {}, now 
   }
 
   // Signed-in players race under their username; everyone else gets a guest name.
-  io.use((socket, next) => {
-    const token = readCookie(socket.request, COOKIE_NAME);
-    const user = token ? db.userForSession(hashToken(token)) : null;
-    socket.data.name = user ? user.username : `guest-${randomInt(1000, 10000)}`;
-    socket.data.signedIn = Boolean(user);
-    next();
+  io.use(async (socket, next) => {
+    try {
+      const token = readCookie(socket.request, COOKIE_NAME);
+      const user = token ? await db.userForSession(hashToken(token)) : null;
+      socket.data.name = user ? user.username : `guest-${randomInt(1000, 10000)}`;
+      socket.data.signedIn = Boolean(user);
+      next();
+    } catch (err) {
+      console.error('race sign-in lookup failed:', err);
+      next(new Error('Could not connect to the race server.'));
+    }
   });
 
   io.on('connection', (socket) => {

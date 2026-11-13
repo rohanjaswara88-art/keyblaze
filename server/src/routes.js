@@ -22,9 +22,9 @@ export function apiRoutes(db, { secureCookies, rateLimits = DEFAULT_RATE_LIMITS 
   const authLimit = rateLimit({ windowMs: LIMIT_WINDOW_MS, max: rateLimits.auth });
   const resultsLimit = rateLimit({ windowMs: LIMIT_WINDOW_MS, max: rateLimits.results });
 
-  function startSession(res, user) {
+  async function startSession(res, user) {
     const token = newSessionToken();
-    db.createSession(hashToken(token), user.id, Date.now() + SESSION_MS);
+    await db.createSession(hashToken(token), user.id, Date.now() + SESSION_MS);
     setSessionCookie(res, token, secureCookies);
   }
 
@@ -33,47 +33,48 @@ export function apiRoutes(db, { secureCookies, rateLimits = DEFAULT_RATE_LIMITS 
   router.post('/auth/register', authLimit, async (req, res) => {
     const { value, error } = validateCredentials(req.body);
     if (error) return fail(res, 400, error);
-    const user = db.createUser(value.username, await hashPassword(value.password));
+    const user = await db.createUser(value.username, await hashPassword(value.password));
     if (!user) return fail(res, 409, 'That username is taken.');
-    startSession(res, user);
+    await startSession(res, user);
     return ok(res, { user }, 201);
   });
 
   router.post('/auth/login', authLimit, async (req, res) => {
     const { value, error } = validateCredentials(req.body);
     if (error) return fail(res, 401, 'Wrong username or password.');
-    const found = db.findUserWithHash(value.username);
+    const found = await db.findUserWithHash(value.username);
     const valid = await verifyPassword(value.password, found ? found.passwordHash : DUMMY_HASH);
     if (!found || !valid) return fail(res, 401, 'Wrong username or password.');
     const { passwordHash: _omit, ...user } = found;
-    startSession(res, user);
+    await startSession(res, user);
     return ok(res, { user });
   });
 
-  router.post('/auth/logout', (req, res) => {
-    if (req.sessionHash) db.deleteSession(req.sessionHash);
+  router.post('/auth/logout', async (req, res) => {
+    if (req.sessionHash) await db.deleteSession(req.sessionHash);
     clearSessionCookie(res, secureCookies);
     return ok(res, null);
   });
 
   router.get('/me', (req, res) => ok(res, { user: req.user }));
 
-  router.post('/results', requireUser, resultsLimit, (req, res) => {
+  router.post('/results', requireUser, resultsLimit, async (req, res) => {
     const { value, error } = validateResult(req.body);
     if (error) return fail(res, 400, error);
-    return ok(res, { result: db.addResult(req.user.id, value) }, 201);
+    return ok(res, { result: await db.addResult(req.user.id, value) }, 201);
   });
 
-  router.get('/results', requireUser, (req, res) => {
+  router.get('/results', requireUser, async (req, res) => {
     const limit = parseLimit(req.query.limit, HISTORY_DEFAULT, HISTORY_MAX);
-    return ok(res, { results: db.listResults(req.user.id, limit), summary: db.summary(req.user.id) });
+    const [results, summary] = await Promise.all([db.listResults(req.user.id, limit), db.summary(req.user.id)]);
+    return ok(res, { results, summary });
   });
 
-  router.get('/leaderboard', (req, res) => {
+  router.get('/leaderboard', async (req, res) => {
     const { value, error } = validateBoardQuery(req.query);
     if (error) return fail(res, 400, error);
     const { mode, amount, period, since } = value;
-    const rows = db.leaderboard({ mode, amount, since, limit: BOARD_SIZE });
+    const rows = await db.leaderboard({ mode, amount, since, limit: BOARD_SIZE });
     return ok(res, { mode, amount, period, rows });
   });
 

@@ -34,12 +34,19 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build the image
         run: docker build -t keyblaze .
-      - name: Start it and check the health endpoint
+      - name: Start it against Postgres and smoke-test the API
         run: |
-          docker run -d --name keyblaze -p 3000:3000 keyblaze
+          # A throwaway Postgres, the same kind of database production uses.
+          docker network create kb
+          docker run -d --name pg --network kb -e POSTGRES_PASSWORD=ci postgres:17-alpine
+          for i in $(seq 1 30); do docker exec pg pg_isready -U postgres && break; sleep 1; done
+          docker run -d --name keyblaze --network kb -p 3000:3000 -e DATABASE_URL=postgres://postgres:ci@pg:5432/postgres keyblaze
           for i in $(seq 1 20); do
-            if curl -fs http://localhost:3000/api/health; then exit 0; fi
+            curl -fs http://localhost:3000/api/health && break
             sleep 1
           done
-          docker logs keyblaze
-          exit 1
+          curl -fs http://localhost:3000/api/health || { docker logs keyblaze; exit 1; }
+          # Creating an account writes to Postgres, so this proves the database works end to end.
+          curl -fs -X POST http://localhost:3000/api/auth/register \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"ci_check","password":"ci-password-123"}' || { docker logs keyblaze; exit 1; }

@@ -1,9 +1,10 @@
 # Keyblaze: the game and its API server in one image.
 FROM node:24-alpine
 
+# Production reads DATABASE_URL (a Postgres connection string) and refuses to start without it.
 ENV NODE_ENV=production \
     PORT=3000 \
-    DATABASE_PATH=/data/keyblaze.db
+    DATA_DIR=/data/pglite
 
 WORKDIR /app
 
@@ -17,7 +18,7 @@ COPY css ./css
 COPY js ./js
 COPY server/src ./server/src
 
-# Run as the unprivileged "node" user, with a writable folder for the SQLite file.
+# Run as the unprivileged "node" user, with a writable folder for local data.
 RUN mkdir -p /data && chown node:node /data
 USER node
 VOLUME ["/data"]
