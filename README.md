@@ -1,6 +1,9 @@
 # Keyblaze
 
-### ▶ [Play it live: rohanjaswara88-art.github.io/keyblaze](https://rohanjaswara88-art.github.io/keyblaze/)
+### ▶ [Play it live: keyblaze.onrender.com](https://keyblaze.onrender.com) (accounts, leaderboards and live races)
+
+Guest-only version without the server: [rohanjaswara88-art.github.io/keyblaze](https://rohanjaswara88-art.github.io/keyblaze/).
+The free server sleeps when idle, so the first visit can take about a minute to wake it.
 
 A calm, satisfying typing speed test: live WPM, a consistency graph, sound packs, a 37-step rank ladder with
 animated emblems, and 13 difficulty levels with 10 tests each.
