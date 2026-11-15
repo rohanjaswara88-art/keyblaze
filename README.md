@@ -1,5 +1,7 @@
 # Keyblaze
 
+![Keyblaze home screen](docs/screenshot.png)
+
 ### ▶ [Play it live: keyblaze.onrender.com](https://keyblaze.onrender.com) (accounts, leaderboards and live races)
 
 Guest-only version without the server: [rohanjaswara88-art.github.io/keyblaze](https://rohanjaswara88-art.github.io/keyblaze/).
