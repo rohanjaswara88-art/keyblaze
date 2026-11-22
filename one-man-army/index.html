@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en" class="js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SOLO — One against all</title>
+<meta name="description" content="A scroll-driven story of one man standing against an entire army. Canvas, GSAP and a lot of dark.">
+<meta name="theme-color" content="#050506">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:ital,wght@1,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body id="top">
+
+<div class="pre" id="pre" aria-hidden="true">
+  <span class="pre-t mono">Entering the arena</span>
+  <span class="pre-n" id="preN">000</span>
+</div>
+
+<div class="grain" aria-hidden="true"></div>
+<div class="cur-r" id="curR" aria-hidden="true"><span id="curT"></span></div>
+<div class="cur-d" id="curD" aria-hidden="true"></div>
+<div class="bar" aria-hidden="true"><i id="bar"></i></div>
+
+<header class="nav">
+  <a href="#top" class="logo" data-cur="home">SOLO<sup>®</sup></a>
+  <nav aria-label="Sections">
+    <a href="#story" data-cur="go">Story</a>
+    <a href="#manifesto" data-cur="go">Manifesto</a>
+    <a href="#numbers" data-cur="go">Numbers</a>
+    <a href="#arena" data-cur="go">Arena</a>
+  </nav>
+</header>
+
+<main>
+  <section class="stage" id="story">
+    <div class="stage-in">
+      <canvas id="scene" aria-hidden="true"></canvas>
+
+      <h1 class="hero" id="hero" aria-label="One against all">
+        <span class="hl" id="h1a">ONE</span>
+        <em class="hs">against</em>
+        <span class="hl" id="h1b">ALL</span>
+      </h1>
+      <p class="hint mono">Click to strike &nbsp;·&nbsp; Scroll to follow</p>
+
+      <div class="chap" data-i="0">
+        <span class="tag mono">Chapter I</span>
+        <h2>SURROUNDED</h2>
+        <p>Three hundred spears. One heartbeat. The ring closes and nobody asks how he got in.</p>
+      </div>
+      <div class="chap" data-i="1">
+        <span class="tag mono">Chapter II</span>
+        <h2>UNBROKEN</h2>
+        <p>He doesn't flinch. He doesn't count. He raises the blade and the whole arena holds its breath.</p>
+      </div>
+      <div class="chap" data-i="2">
+        <span class="tag mono">Chapter III</span>
+        <h2>DOMINANCE</h2>
+        <p>The ring breaks. He doesn't.</p>
+      </div>
+      <div class="idx mono"><b id="idx">01</b> / 03</div>
+    </div>
+  </section>
+
+  <section class="mani" id="manifesto">
+    <p class="kick mono">Move your light</p>
+    <div class="mani-txt dim">THEY BROUGHT<br>AN ARMY.<br>HE BROUGHT<br><span class="red">NOTHING<br>TO LOSE.</span></div>
+    <div class="mani-txt lit" id="lit" aria-hidden="true"><div>THEY BROUGHT<br>AN ARMY.<br>HE BROUGHT<br><span class="red">NOTHING<br>TO LOSE.</span></div></div>
+  </section>
+
+  <section class="nums" id="numbers">
+    <div class="nums-pin">
+      <div class="track" id="track">
+        <article class="pan">
+          <span class="mono">The odds</span>
+          <div class="big"><b data-to="1">1</b><i>:</i><b data-to="300">300</b></div>
+          <p>Nobody discussed the ratio. Nobody had to.</p>
+        </article>
+        <article class="pan">
+          <span class="mono">Steps back</span>
+          <div class="big"><b data-to="0">0</b></div>
+          <p>Retreat is a rumour spread by the ones who left.</p>
+        </article>
+        <article class="pan inv">
+          <span class="mono">Rule</span>
+          <div class="quote">NO ONE LEAVES<br>THE RING<br><em>but him.</em></div>
+        </article>
+        <article class="pan">
+          <span class="mono">Left standing</span>
+          <div class="big"><b data-to="1">1</b></div>
+          <p>That's the whole story. That's all of it.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="fin" id="arena">
+    <canvas id="finScene" aria-hidden="true"></canvas>
+    <div class="fin-in">
+      <p class="mono">The arena is open</p>
+      <h2 class="out" id="finH">STAND<br>ALONE.</h2>
+      <a class="btn mag" href="#top" id="enter" data-cur="go">Enter the arena <span aria-hidden="true">↑</span></a>
+    </div>
+    <div class="tick" aria-hidden="true">
+      <div class="tick-in">
+        <span>NO RETREAT ✦ NO SURRENDER ✦ NO MERCY ✦ </span><span>NO RETREAT ✦ NO SURRENDER ✦ NO MERCY ✦ </span><span>NO RETREAT ✦ NO SURRENDER ✦ NO MERCY ✦ </span><span>NO RETREAT ✦ NO SURRENDER ✦ NO MERCY ✦ </span>
+      </div>
+    </div>
+    <footer class="mono">© 2026 SOLO — a concept experience. Built with canvas, GSAP and Lenis. No images were harmed.</footer>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script src="scene.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
