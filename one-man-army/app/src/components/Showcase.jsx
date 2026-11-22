@@ -25,7 +25,7 @@ function camFor(ax, ay, s, rot, tx, ty) {
 }
 
 /* the largest scale at which the sword's extents (a box in sword coordinates) stay `pad` px inside the screen */
-const HERO_BOX = [[0, -125], [1220, -125], [0, 70], [1220, 70]];     // blossoms ride above the blade, the tassel hangs below the pommel
+const HERO_BOX = [[-6, -172], [1226, -172], [-6, 78], [1226, 78]];     // blossoms ride above the blade, the tassel hangs below the pommel
 function fitScale(rot, cx, cy, box, W, H, pad) {
   const a = rot * D2R, c = Math.cos(a), si = Math.sin(a);
   let s = Infinity;
@@ -38,7 +38,7 @@ function fitScale(rot, cx, cy, box, W, H, pad) {
 }
 
 function poses(W, H) {
-  const land = W / H > 0.95, pad = Math.max(10, Math.min(W, H) * 0.03);
+  const land = W / H > 0.95, pad = Math.max(14, Math.min(W, H) * 0.035);
   if (land) {
     const r = 27 * D2R, cx = W * 0.55, cy = H * 0.47;
     const sh = Math.min((0.74 * W) / (1220 * Math.cos(r) + 40), (0.66 * H) / (1220 * Math.sin(r) + 60), fitScale(-27, cx, cy, HERO_BOX, W, H, pad));
