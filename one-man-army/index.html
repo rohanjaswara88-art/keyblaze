@@ -1,121 +1,18 @@
 <!doctype html>
-<html lang="en" class="js">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SOLO — One man. No limits.</title>
-<meta name="description" content="A scroll-driven climb about one man doing the impossible, one rep at a time.">
+<meta name="description" content="A scroll-driven film about one man doing the impossible, one rep at a time.">
 <meta name="theme-color" content="#050506">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:ital,wght@1,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:ital,wght@0,500;1,500;1,600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="./assets/index-Drhsqfhe.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-52Blvqw_.css">
 </head>
 <body id="top">
-
-<div class="pre" id="pre" aria-hidden="true">
-  <span class="pre-t mono">Five a.m. Nobody is watching</span>
-  <span class="pre-n" id="preN">000</span>
-</div>
-
-<div class="grain" aria-hidden="true"></div>
-<div class="cur-r" id="curR" aria-hidden="true"><span id="curT"></span></div>
-<div class="cur-d" id="curD" aria-hidden="true"></div>
-<div class="bar" aria-hidden="true"><i id="bar"></i></div>
-
-<header class="nav">
-  <a href="#top" class="logo" data-cur="home">SOLO<sup>®</sup></a>
-  <nav aria-label="Sections">
-    <a href="#story" data-cur="go">Story</a>
-    <a href="#manifesto" data-cur="go">Manifesto</a>
-    <a href="#numbers" data-cur="go">Numbers</a>
-    <a href="#arena" data-cur="go">Finish</a>
-  </nav>
-</header>
-
-<main>
-  <section class="stage" id="story">
-    <div class="stage-in">
-      <canvas id="scene" aria-hidden="true"></canvas>
-
-      <h1 class="hero" id="hero" aria-label="One man doing the impossible">
-        <span class="hl" id="h1a">ONE MAN</span>
-        <em class="hs">doing the</em>
-        <span class="hl" id="h1b">IMPOSSIBLE</span>
-      </h1>
-      <p class="hint mono">Hold to charge &nbsp;·&nbsp; Scroll to climb</p>
-
-      <div class="chap" data-i="0">
-        <span class="tag mono">Chapter I</span>
-        <h2>THE GRIND</h2>
-        <p>Five a.m. No crowd, no applause. Just the mountain, the cold, and the next step.</p>
-      </div>
-      <div class="chap" data-i="1">
-        <span class="tag mono">Chapter II</span>
-        <h2>THE CLIMB</h2>
-        <p>Every step is a decision. Quitting is always an option. He never picks it.</p>
-      </div>
-      <div class="chap" data-i="2">
-        <span class="tag mono">Chapter III</span>
-        <h2>UNSTOPPABLE</h2>
-        <p>Impossible is just unfinished work.</p>
-      </div>
-      <div class="idx mono"><b id="idx">01</b> / 03</div>
-    </div>
-  </section>
-
-  <section class="mani" id="manifesto">
-    <p class="kick mono">Move your light</p>
-    <div class="mani-txt dim">THEY SLEPT.<br>HE TRAINED.<br>NOBODY WATCHED.<br><span class="red">EVERYONE WILL.</span></div>
-    <div class="mani-txt lit" id="lit" aria-hidden="true"><div>THEY SLEPT.<br>HE TRAINED.<br>NOBODY WATCHED.<br><span class="red">EVERYONE WILL.</span></div></div>
-  </section>
-
-  <section class="nums" id="numbers">
-    <div class="nums-pin">
-      <div class="track" id="track">
-        <article class="pan">
-          <span class="mono">Reps</span>
-          <div class="big"><b data-to="5000">5000</b></div>
-          <p>Before sunrise. Nobody counted but him.</p>
-        </article>
-        <article class="pan">
-          <span class="mono">Days off</span>
-          <div class="big"><b data-to="0">0</b></div>
-          <p>Rest is a rumour spread by the ones who quit.</p>
-        </article>
-        <article class="pan inv">
-          <span class="mono">Rule</span>
-          <div class="quote">NOBODY HANDS<br>YOU THE<br>IMPOSSIBLE.<br><em>you earn it.</em></div>
-        </article>
-        <article class="pan">
-          <span class="mono">Man</span>
-          <div class="big"><b data-to="1">1</b></div>
-          <p>That's all it takes. That's all of it.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="fin" id="arena">
-    <canvas id="finScene" aria-hidden="true"></canvas>
-    <div class="fin-in">
-      <p class="mono">Your turn</p>
-      <h2 class="out" id="finH">EARN<br>IT.</h2>
-      <a class="btn mag" href="#top" id="enter" data-cur="go">Back to the start <span aria-hidden="true">↑</span></a>
-    </div>
-    <div class="tick" aria-hidden="true">
-      <div class="tick-in">
-        <span>NO SHORTCUTS ✦ NO DAYS OFF ✦ NO EXCUSES ✦ </span><span>NO SHORTCUTS ✦ NO DAYS OFF ✦ NO EXCUSES ✦ </span><span>NO SHORTCUTS ✦ NO DAYS OFF ✦ NO EXCUSES ✦ </span><span>NO SHORTCUTS ✦ NO DAYS OFF ✦ NO EXCUSES ✦ </span>
-      </div>
-    </div>
-    <footer class="mono">© 2026 SOLO — a concept experience. Artwork supplied by the site owner. Built with canvas, GSAP and Lenis.</footer>
-  </section>
-</main>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-<script src="scene.js"></script>
-<script src="main.js"></script>
+<div id="root"></div>
 </body>
 </html>

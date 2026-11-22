@@ -4,8 +4,6 @@
    - His wings are attached to his shoulders and follow him with spring physics.
    - After the climb he lifts off toward the star.
    - Wind sways his bag, snow falls. */
-(function () {
-  'use strict';
 
   var TAU = Math.PI * 2;
   var coarse = matchMedia('(pointer: coarse)').matches;
@@ -20,7 +18,7 @@
   var smooth = function (a, b, x) { x = clamp((x - a) / (b - a), 0, 1); return x * x * (3 - 2 * x); };
   var easeIO = function (x) { return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; };
 
-  var BASE = (window.SOLO_BASE || '') + 'media/';
+  var BASE = import.meta.env.BASE_URL + 'media/';
   var IW = 736, IH = 1308;        // logical size of the picture
   var IWE = IW + 260;             // plus the extension of the slope on the right
   var WING_REACH = 260;
@@ -30,7 +28,7 @@
   var PC = [706, 1050];           // path control: along the slope
   var PS = [396, 930];            // the star: where he ends up
   var STRIDE = 15;                // ground travelled per full step cycle
-  var LAYERS = ['base', 'baseR', 'wingL', 'wingR', 'cLegL', 'cLegR', 'cTorso', 'cPack', 'cStrap'];
+  var LAYERS = ['base', 'baseR', 'wingL', 'wingR', 'wingLr', 'wingRr', 'cLegL', 'cLegR', 'cTorso', 'cPack', 'cStrap'];
   var FILE = { base: 'base-hd.jpg', baseR: 'baseR.jpg' };
 
   /* ---------- assets ---------- */
@@ -54,6 +52,7 @@
 
   Promise.all(jobs).then(function (r) {
     var small = r[0]; meta = r[1];
+    meta.wingLr = meta.wingL; meta.wingRr = meta.wingR;   // the finale uses outline-free copies that sit over the body
     LAYERS.forEach(function (n, i) {
       var im = r[2 + i];
       if (n === 'base') {
@@ -394,7 +393,7 @@
         if (!fixed) drawLayer('baseR', { bend: 0 }, camU);
 
         // wings sit behind him
-        [['wingL', wingPose.L], ['wingR', wingPose.R]].forEach(function (w) {
+        [[fixed ? 'wingLr' : 'wingL', wingPose.L], [fixed ? 'wingRr' : 'wingR', wingPose.R]].forEach(function (w) {
           var mt = meta[w[0]];
           drawLayer(w[0], { ang: w[1].ang, bend: phys.bend, sc: w[1].sc, tx: w[1].ax - mt.px, ty: w[1].ay - mt.py }, camU);
         });
@@ -421,7 +420,7 @@
         fx.save(); fx.setTransform(DPR * k, 0, 0, DPR * k, -sx * k * DPR, -sy * k * DPR);
         fx.globalAlpha = intro; fx.drawImage(pots.base.im, 0, 0, IW, IH);
         if (!fixed) { var mb = meta.baseR; fx.drawImage(pots.baseR.im, mb.x, mb.y, mb.w, mb.h); }
-        ['wingL', 'wingR'].forEach(function (n) { var mt = meta[n], wp = wingPose[n === 'wingL' ? 'L' : 'R']; fx.drawImage(pots[n].im, mt.x - mt.px + wp.ax, mt.y - mt.py + wp.ay, mt.w * wp.sc, mt.h * wp.sc); });
+        [fixed ? 'wingLr' : 'wingL', fixed ? 'wingRr' : 'wingR'].forEach(function (n, ni) { var mt = meta[n], wp = wingPose[ni ? 'R' : 'L']; fx.drawImage(pots[n].im, mt.x - mt.px + wp.ax, mt.y - mt.py + wp.ay, mt.w * wp.sc, mt.h * wp.sc); });
         if (!fixed) ['cLegL', 'cLegR', 'cTorso', 'cPack', 'cStrap'].forEach(function (n) { var mt = meta[n]; fx.drawImage(pots[n].im, mt.x + dxw, mt.y + dyw, mt.w, mt.h); });
         fx.restore();
       } else fx.clearRect(0, 0, W, H);
@@ -536,5 +535,5 @@
     return { target: target, shock: shock, setActive: function (v) { active = v; } };
   }
 
-  window.Scene = { create: create };
-})();
+  /* exported */
+  export const Scene = { create: create };
