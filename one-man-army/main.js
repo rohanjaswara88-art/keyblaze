@@ -38,7 +38,7 @@
   scrollTo.native = function (y) { window.scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' }); };
 
   /* ---------- scenes ---------- */
-  var hero = Scene.create($('#scene'));
+  var hero = Scene.create($('#scene'), { interact: true });
   var fin = Scene.create($('#finScene'), { fixed: 0.56, init: { intro: 1, burn: 1 } });
   fin.setActive(false);
   new IntersectionObserver(function (e) { fin.setActive(e[0].isIntersecting); }, { rootMargin: '100px' }).observe($('#finScene'));
@@ -114,11 +114,6 @@
     onEnterBack: function () { hero.setActive(true); }
   });
 
-  addEventListener('pointerdown', function (e) {
-    if (e.target.closest('a,button')) return;
-    var r = $('.stage').getBoundingClientRect();
-    if (r.bottom > innerHeight * 0.5 && r.top < innerHeight * 0.5) hero.shock();
-  });
 
   /* ---------- progress bar ---------- */
   gsap.to('#bar', { scaleX: 1, ease: 'none', scrollTrigger: { start: 0, end: 'max', scrub: true } });
