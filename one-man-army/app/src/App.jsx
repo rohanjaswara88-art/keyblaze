@@ -23,7 +23,7 @@ export default function App() {
       <Nav show={revealed} />
       <main>
         <Showcase revealed={revealed} />
-        <footer className="foot mono"><span>© 2026 SOLO</span><span>More of the story soon</span></footer>
+        <footer className="foot mono"><span>© 2026 dynamic.showcase</span><span>More of the story soon</span></footer>
       </main>
     </>
   );

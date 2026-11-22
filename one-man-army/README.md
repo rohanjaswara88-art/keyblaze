@@ -1,7 +1,7 @@
-# SOLO — one man, no limits
+# dynamic.showcase
 
-A scroll-driven film about one man doing the impossible. React, GSAP, Lenis, a WebGL shader scene,
-and [React Bits](https://reactbits.dev) components. There are no image files: every visual is generated in code.
+A scroll-driven showpiece: a katana drawn in code that comes apart as you scroll. React, GSAP, Lenis
+and [React Bits](https://reactbits.dev) components. There are no image files: every visual is vector, drawn in code.
 
 ## Layout
 
