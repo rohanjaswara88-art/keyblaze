@@ -1,4 +1,5 @@
-/* SOLO — procedural arena scene. Everything is drawn in code: no images. */
+/* SOLO — "The Ascent": motion on top of a single picture.
+   The camera climbs the artwork as you scroll, the wings burn, embers rise. */
 (function () {
   'use strict';
 
@@ -6,328 +7,208 @@
   var coarse = matchMedia('(pointer: coarse)').matches;
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   var mouse = { x: 0.5, y: 0.5 };
-
   addEventListener('pointermove', function (e) {
     mouse.x = e.clientX / innerWidth;
     mouse.y = e.clientY / innerHeight;
   }, { passive: true });
 
-  function clamp(x, a, b) { return Math.min(b === undefined ? 1 : b, Math.max(a === undefined ? 0 : a, x)); }
-  function lerp(a, b, t) { return a + (b - a) * t; }
-  function easeOut(x) { return 1 - Math.pow(1 - clamp(x), 3); }
+  var clamp = function (x, a, b) { return Math.min(b, Math.max(a, x)); };
+  var smooth = function (a, b, x) { x = clamp((x - a) / (b - a), 0, 1); return x * x * (3 - 2 * x); };
+  var easeIO = function (x) { return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; };
 
-  function rng(seed) {
-    return function () {
-      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
-      var x = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-      x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
-      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
-    };
+  /* ---------- load the picture once, prepare glow layers ---------- */
+  var img = new Image();
+  var ready = false;
+  var IW = 0, IH = 0, glowSharp = null, glowBloom = null, embers = [];
+
+  function bloom(src) {
+    var w = src.width, h = src.height;
+    var a = document.createElement('canvas');
+    a.width = Math.max(1, w >> 3); a.height = Math.max(1, h >> 3);
+    var ax = a.getContext('2d'); ax.imageSmoothingEnabled = true;
+    ax.drawImage(src, 0, 0, a.width, a.height);
+    var b = document.createElement('canvas'); b.width = w; b.height = h;
+    var bx = b.getContext('2d'); bx.imageSmoothingEnabled = true; bx.imageSmoothingQuality = 'high';
+    bx.drawImage(a, 0, 0, w, h);
+    return b;
   }
 
-  // Shared grain tile for the lit floor.
-  var grainTile = (function () {
-    var c = document.createElement('canvas');
-    c.width = c.height = 160;
-    var g = c.getContext('2d');
-    var im = g.createImageData(160, 160);
-    for (var i = 0; i < im.data.length; i += 4) {
-      var v = 150 + Math.random() * 105;
-      im.data[i] = im.data[i + 1] = im.data[i + 2] = v;
-      im.data[i + 3] = 255;
-    }
-    g.putImageData(im, 0, 0);
-    return c;
-  })();
+  function prepare() {
+    IW = img.naturalWidth; IH = img.naturalHeight;
+    try {
+      var c = document.createElement('canvas'); c.width = IW; c.height = IH;
+      var x = c.getContext('2d', { willReadFrequently: true });
+      x.drawImage(img, 0, 0);
+      var d = x.getImageData(0, 0, IW, IH).data;
+      var gw = IW >> 1, gh = IH >> 1;
+      var m = document.createElement('canvas'); m.width = gw; m.height = gh;
+      var mx = m.getContext('2d');
+      var out = mx.createImageData(gw, gh);
+      for (var y = 0; y < gh; y++) {
+        for (var xx = 0; xx < gw; xx++) {
+          var lum = d[((y * 2) * IW + xx * 2) * 4];
+          var nx = xx / gw, ny = y / gh;
+          var dx = (nx - 0.52) / 0.38, dy = (ny - 0.6) / 0.27;
+          var reg = Math.max(0, 1 - (dx * dx + dy * dy));
+          var a = lum > 175 ? ((lum - 175) / 80) * Math.pow(reg, 0.55) : 0;
+          var o = (y * gw + xx) * 4;
+          out.data[o] = 255; out.data[o + 1] = 70 + a * 110; out.data[o + 2] = 40 + a * 40; out.data[o + 3] = a * 255;
+          if (a > 0.5 && Math.random() < 0.025) embers.push([nx, ny]);
+        }
+      }
+      mx.putImageData(out, 0, 0);
+      glowSharp = m;
+      glowBloom = bloom(m);
+    } catch (e) { /* pixel access blocked (file://): the picture still moves, just without the burn */ }
+    if (!embers.length) embers.push([0.5, 0.6]);
+    ready = true;
+  }
+  img.onload = prepare;
+  img.src = 'media/ascent.jpg';
 
+  /* ---------- scene ---------- */
   function create(cv, opts) {
     opts = opts || {};
-    var crowd = opts.crowd !== false;
     var ctx = cv.getContext('2d');
-    var target = { ring: 1, fall: 0, raise: 0, widen: 0.15, lean: 0.25, intro: 0 };
+    var target = { pan: 0, burn: 0, intro: 0 };
     if (opts.init) for (var k in opts.init) target[k] = opts.init[k];
-    var cur = {};
-    for (var k2 in target) cur[k2] = target[k2];
+    var cur = {}; for (var k2 in target) cur[k2] = target[k2];
 
-    var shocks = [];
+    var W = 1, H = 1, DPR = 1, t = 0, flash = 0, active = true, parts = [];
     var sm = { x: 0.5, y: 0.5 };
-    var W = 0, H = 0, U = 1, cx = 0, cy = 0, rx = 0, ry = 0, DPR = 1;
-    var soldiers = [];
-    var active = true;
-    var t = 0;
-    var pattern = ctx.createPattern(grainTile, 'repeat');
-
-    function build() {
-      soldiers = [];
-      if (!crowd) return;
-      var r = rng(11);
-      var rows = coarse
-        ? [[1.15, 34], [1.35, 48], [1.6, 64], [1.9, 84]]
-        : [[1.15, 52], [1.32, 70], [1.52, 92], [1.76, 120], [2.05, 150]];
-      rows.forEach(function (row) {
-        var R = row[0], n = row[1];
-        for (var i = 0; i < n; i++) {
-          soldiers.push({
-            R: R * (1 + (r() - 0.5) * 0.05),
-            th: ((i + r() * 0.8) / n) * TAU,
-            ph: r() * TAU,
-            st: r(),
-            len: 0.85 + r() * 0.5,
-            shield: r() > 0.35,
-            h: 0.9 + r() * 0.2
-          });
-        }
-      });
-      soldiers.sort(function (a, b) { return Math.sin(a.th) * a.R - Math.sin(b.th) * b.R; });
-    }
 
     function resize() {
       var b = cv.getBoundingClientRect();
       DPR = Math.min(devicePixelRatio || 1, 2);
-      W = Math.max(1, Math.round(b.width));
-      H = Math.max(1, Math.round(b.height));
-      cv.width = W * DPR;
-      cv.height = H * DPR;
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-      U = Math.max(0.5, Math.min(H / 820, (W / 900) * 1.4));
-      cx = W / 2;
-      cy = H * 0.69;
-      rx = W < 700 ? W * 0.4 : W * 0.3;
-      ry = Math.min(H * 0.2, rx * 0.46);
+      W = Math.max(1, Math.round(b.width)); H = Math.max(1, Math.round(b.height));
+      cv.width = W * DPR; cv.height = H * DPR;
     }
 
-    function shock() { shocks.push({ t0: t }); if (shocks.length > 4) shocks.shift(); }
-
-    function drawCone(lx, open) {
-      var tw = W * 0.09 * (1 + cur.widen * 0.6) * open;
-      var bw = rx * (0.8 + 0.4 * cur.widen) * open;
-      var g = ctx.createLinearGradient(0, 0, 0, cy);
-      g.addColorStop(0, 'rgba(255,255,255,1)');
-      g.addColorStop(0.7, 'rgba(255,255,255,.92)');
-      g.addColorStop(1, 'rgba(255,255,255,.8)');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.moveTo(cx + lx * 2 - tw, -10);
-      ctx.lineTo(cx + lx * 2 + tw, -10);
-      ctx.lineTo(cx + lx + bw, cy);
-      ctx.lineTo(cx + lx - bw, cy);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    function drawFloor(lx, open) {
-      if (open < 0.01) return;
-      var R = rx * 1.1 * open;
-      ctx.save();
-      ctx.translate(cx + lx, cy);
-      ctx.scale(1, ry / rx);
-      var g = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
-      g.addColorStop(0, '#ffffff');
-      g.addColorStop(0.55, '#e8e8e4');
-      g.addColorStop(0.9, '#9c9c99');
-      g.addColorStop(1, 'rgba(120,120,118,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(0, 0, R, 0, TAU);
-      ctx.fill();
-      ctx.globalCompositeOperation = 'multiply';
-      ctx.globalAlpha = 0.42;
-      ctx.fillStyle = pattern;
-      ctx.fill();
-      ctx.restore();
-    }
-
-    function drawSoldier(s, open) {
-      var th = s.th;
-      var rr = s.R * cur.ring;
-      var x0 = cx + Math.cos(th) * rx * rr;
-      var y0 = cy + Math.sin(th) * ry * rr;
-      var depth = (Math.sin(th) + 1) / 2;
-      var k = U * (0.4 + 0.62 * depth) * s.h * (1 + (s.R - 1) * 0.1);
-
-      var a = clamp(open * 1.6 - s.st * 0.6);
-      if (a <= 0.01) return;
-      var f = clamp((cur.fall * 1.45 - s.st * 0.45) / 0.55);
-
-      var push = 0;
-      for (var i = 0; i < shocks.length; i++) {
-        var age = t - shocks[i].t0;
-        if (age < 0 || age > 2.2) continue;
-        var d = age * 1.9 - rr;
-        push += Math.exp(-(d * d) / 0.03);
+    function spawn(n, power) {
+      for (var i = 0; i < n; i++) {
+        var e = embers[(Math.random() * embers.length) | 0];
+        parts.push({
+          x: e[0] * IW, y: e[1] * IH,
+          vx: (Math.random() - 0.5) * 0.5 * power,
+          vy: -(0.35 + Math.random() * 1.1) * power,
+          r: 0.8 + Math.random() * 2.2,
+          life: 1, dec: 0.006 + Math.random() * 0.012,
+          ph: Math.random() * TAU
+        });
       }
-      var dx = Math.cos(th) * push * 38 * k;
-      var dy = Math.sin(th) * push * 12 * k;
-      var side = Math.cos(th) > 0 ? 1 : -1;
-
-      ctx.save();
-      ctx.globalAlpha = a * (1 - f * 0.92);
-      ctx.translate(x0 + dx, y0 + dy + f * 14 * k + (1 - a) * 30 * k);
-      ctx.rotate(f * side * 1.35 + push * side * 0.35);
-      ctx.scale(k, k);
-
-      ctx.fillStyle = '#040405';
-      ctx.strokeStyle = 'rgba(240,240,235,.3)';
-      ctx.lineWidth = 1;
-
-      ctx.beginPath();
-      ctx.moveTo(-10, 0); ctx.lineTo(-13, -30);
-      ctx.quadraticCurveTo(0, -46, 13, -30);
-      ctx.lineTo(10, 0); ctx.closePath();
-      ctx.fill(); ctx.stroke();
-
-      ctx.beginPath(); ctx.arc(0, -50, 7, 0, TAU); ctx.fill(); ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(-1.5, -56); ctx.quadraticCurveTo(0, -68, 6, -60); ctx.lineTo(1.5, -55);
-      ctx.fill();
-
-      if (s.shield) {
-        ctx.beginPath(); ctx.ellipse(-15, -25, 8, 14, 0.1, 0, TAU); ctx.fill(); ctx.stroke();
-      }
-
-      var sway = reduce ? 0 : Math.sin(t * 1.4 + s.ph) * 0.025;
-      var lean = -Math.cos(th) * cur.lean * 0.9 + (sm.x - 0.5) * 0.12 + sway - f * 1.1;
-      var L = 105 * s.len;
-      var sl = Math.sin(lean), cl = Math.cos(lean);
-      var bx = 17 - sl * 10, by = -4 + cl * 10;
-      var ex = 17 + sl * L, ey = -4 - cl * L;
-      ctx.strokeStyle = '#040405';
-      ctx.lineWidth = 2.2;
-      ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(ex, ey); ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(ex + sl * 15, ey - cl * 15);
-      ctx.lineTo(ex + cl * 3.4, ey + sl * 3.4);
-      ctx.lineTo(ex - cl * 3.4, ey - sl * 3.4);
-      ctx.closePath(); ctx.fill();
-      ctx.restore();
+      if (parts.length > 700) parts.splice(0, parts.length - 700);
     }
 
-    function drawWarrior(x, y, flip, alpha) {
-      var sc = U * 1.75;
-      var sw = reduce ? 0 : Math.sin(t * 1.8) * 3;
-      var br = reduce ? 0 : Math.sin(t * 1.5) * 0.8;
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.scale(sc, flip ? -sc * 0.9 : sc);
-      ctx.globalAlpha = alpha;
-
-      ctx.fillStyle = '#b3121c';
-      ctx.beginPath();
-      ctx.moveTo(-12, -98 + br);
-      ctx.bezierCurveTo(-30, -84, -44 + sw, -50, -40 + sw * 1.6, -22);
-      ctx.lineTo(-30 + sw, -26);
-      ctx.lineTo(-22 + sw, -14);
-      ctx.lineTo(-12, -58);
-      ctx.closePath(); ctx.fill();
-
-      ctx.fillStyle = '#000';
-      ctx.beginPath(); ctx.moveTo(-15, 0); ctx.lineTo(-11, -48); ctx.lineTo(0, -48); ctx.lineTo(-3, 0); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(4, 0); ctx.lineTo(1, -48); ctx.lineTo(12, -48); ctx.lineTo(20, 0); ctx.closePath(); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(-14, -44); ctx.lineTo(14, -44); ctx.lineTo(17, -92 + br);
-      ctx.quadraticCurveTo(0, -100 + br, -17, -92 + br);
-      ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(-15, -46); ctx.lineTo(15, -46); ctx.lineTo(18, -30); ctx.lineTo(-18, -30); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.arc(0, -106 + br, 8, 0, TAU); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(-3, -113 + br);
-      ctx.bezierCurveTo(-4, -128, 10, -130, 18 + sw * 0.4, -118);
-      ctx.bezierCurveTo(8, -122, 2, -118, 3, -112 + br);
-      ctx.fill();
-
-      ctx.save();
-      ctx.translate(-27, -68); ctx.rotate(-0.12);
-      ctx.beginPath(); ctx.ellipse(0, 0, 12, 23, 0, 0, TAU); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1; ctx.stroke();
-      ctx.restore();
-
-      var aim = lerp(0.95, -1.3, cur.raise) + clamp((sm.x - 0.5) * 0.7, -0.35, 0.35) - clamp((sm.y - 0.55) * 0.4, -0.2, 0.2);
-      var ca = Math.cos(aim), sa = Math.sin(aim);
-      var hx = 15 + ca * 20, hy = -86 + sa * 20;
-      ctx.strokeStyle = '#000'; ctx.lineCap = 'round';
-      ctx.lineWidth = 7;
-      ctx.beginPath(); ctx.moveTo(14, -90 + br); ctx.lineTo(hx, hy); ctx.stroke();
-      ctx.lineWidth = 3.2;
-      ctx.beginPath(); ctx.moveTo(hx - ca * 6, hy - sa * 6); ctx.lineTo(hx + ca * 82, hy + sa * 82); ctx.stroke();
-      var gx = hx + ca * 8, gy = hy + sa * 8;
-      ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(gx + sa * 8, gy - ca * 8); ctx.lineTo(gx - sa * 8, gy + ca * 8); ctx.stroke();
-      ctx.restore();
-    }
-
-    function drawShockRings(lx) {
-      for (var i = 0; i < shocks.length; i++) {
-        var age = t - shocks[i].t0;
-        if (age < 0 || age > 2.2) continue;
-        var w = age * 1.9;
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, 1 - age / 2.2) * 0.55;
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 3 * (1 - age / 2.2) + 0.5;
-        ctx.beginPath();
-        ctx.ellipse(cx + lx, cy, w * rx, w * ry, 0, 0, TAU);
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
+    function shock() { flash = 1; spawn(coarse ? 90 : 220, 2.4); }
 
     function draw() {
-      var open = easeOut(cur.intro);
-      var shake = 0;
-      for (var i = 0; i < shocks.length; i++) {
-        var age = t - shocks[i].t0;
-        if (age >= 0 && age < 0.35) shake = Math.max(shake, (1 - age / 0.35) * 7);
-      }
+      var intro = 1 - Math.pow(1 - clamp(cur.intro, 0, 1), 3);
+      var p = cur.pan;
+      var fixed = opts.fixed;
+
+      var base = Math.max(Math.min(W, 1000) / IW, H / IH);
+      var zoom = fixed ? 1.04 : 1.2 - 0.2 * smooth(0, 0.5, p) + 0.12 * smooth(0.72, 1, p);
+      zoom *= 1 + (1 - intro) * 0.22 + (reduce ? 0 : Math.sin(t * 0.6) * 0.006);
+      var k = base * zoom;
+      var vw = W / k, vh = H / k;
+
+      var fy = fixed ? fixed : 0.86 - 0.31 * easeIO(clamp(p / 0.8, 0, 1)) - 0.05 * smooth(0.8, 1, p);
+      var fx = fixed ? 0.5 : 0.5 + 0.3 * (1 - smooth(0, 0.4, p));
+      var cx = clamp(fx * IW, Math.min(vw / 2, IW / 2), Math.max(IW - vw / 2, IW / 2));
+      var cy = clamp(fy * IH, Math.min(vh / 2, IH / 2), Math.max(IH - vh / 2, IH / 2));
+      var sx = cx - vw / 2 - (sm.x - 0.5) * 18 / k;
+      var sy = cy - vh / 2 - (sm.y - 0.5) * 12 / k;
+
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#050506';
+      ctx.fillRect(0, 0, W, H);
 
       ctx.save();
-      if (shake && !reduce) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
-      ctx.clearRect(-20, -20, W + 40, H + 40);
+      ctx.setTransform(DPR * k, 0, 0, DPR * k, -sx * k * DPR, -sy * k * DPR);
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      var flick = reduce ? 1 : 0.94 + Math.sin(t * 7.3) * 0.02 + Math.sin(t * 2.1) * 0.03;
+      ctx.globalAlpha = intro * flick;
+      ctx.drawImage(img, 0, 0);
 
-      var g = ctx.createRadialGradient(cx, cy * 0.8, 10, cx, cy * 0.8, Math.max(W, H) * 0.8);
-      g.addColorStop(0, '#17171b');
-      g.addColorStop(1, '#050506');
-      ctx.fillStyle = g;
-      ctx.fillRect(-20, -20, W + 40, H + 40);
+      var pulse = 0.75 + 0.25 * Math.sin(t * 2.2) + 0.08 * Math.sin(t * 5.3);
+      var b = cur.burn * pulse;
+      if (glowBloom && b > 0.01) {
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = Math.min(1, b * 1.1) * intro;
+        ctx.drawImage(glowBloom, 0, 0, IW, IH);
+        ctx.globalAlpha = Math.min(1, b * 0.55) * intro;
+        ctx.drawImage(glowSharp, 0, 0, IW, IH);
+      }
 
-      var lx = (sm.x - 0.5) * W * 0.03;
-      drawCone(lx, open);
-      drawFloor(lx, open);
-      for (var j = 0; j < soldiers.length; j++) drawSoldier(soldiers[j], open);
-      drawShockRings(lx);
-
-      var wy = cy + ry * 0.06;
-      drawWarrior(cx + lx * 0.4, wy, true, 0.2 * open);
-      drawWarrior(cx + lx * 0.4, wy, false, open);
-
-      var v = ctx.createRadialGradient(cx, H * 0.55, Math.min(W, H) * 0.3, cx, H * 0.55, Math.max(W, H) * 0.85);
-      v.addColorStop(0, 'rgba(0,0,0,0)');
-      v.addColorStop(1, 'rgba(0,0,0,.7)');
-      ctx.fillStyle = v;
-      ctx.fillRect(-20, -20, W + 40, H + 40);
+      if (cur.burn > 0.02 && !reduce) spawn(Math.round((coarse ? 0.7 : 1.8) * cur.burn + Math.random() * 0.6), 1);
+      ctx.globalCompositeOperation = 'lighter';
+      for (var i = parts.length - 1; i >= 0; i--) {
+        var q = parts[i];
+        q.x += q.vx + Math.sin(t * 2 + q.ph) * 0.12; q.y += q.vy; q.life -= q.dec;
+        if (q.life <= 0) { parts.splice(i, 1); continue; }
+        ctx.globalAlpha = q.life * 0.9;
+        ctx.fillStyle = q.life > 0.55 ? '#ffd9a0' : '#ff4a2a';
+        ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, TAU); ctx.fill();
+      }
       ctx.restore();
+
+      /* "this is him" marker on the climber, fades as the climb begins */
+      var hint = (1 - smooth(0, 0.1, p)) * intro;
+      if (!fixed && hint > 0.02) {
+        var hx = (0.8 * IW - sx) * k, hy = (0.835 * IH - sy) * k;
+        var r = (46 + Math.sin(t * 3) * 5) * k * 0.7;
+        ctx.globalAlpha = hint;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = '#c1121f'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(hx, hy, r, 0, TAU); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(hx - r, hy); ctx.lineTo(hx - r - 60, hy); ctx.stroke();
+        ctx.font = '700 13px "Space Mono", monospace'; ctx.textAlign = 'right';
+        ctx.lineWidth = 4; ctx.strokeStyle = '#000'; ctx.lineJoin = 'round';
+        ctx.strokeText('THIS IS HIM', hx - r - 68, hy + 5);
+        ctx.fillStyle = '#fff'; ctx.fillText('THIS IS HIM', hx - r - 68, hy + 5);
+      }
+
+      /* vignette, sides melt into the page, flash on ignite */
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      var v = ctx.createRadialGradient(W / 2, H * 0.55, Math.min(W, H) * 0.35, W / 2, H * 0.55, Math.max(W, H) * 0.8);
+      v.addColorStop(0, 'rgba(5,5,6,0)'); v.addColorStop(1, 'rgba(5,5,6,.78)');
+      ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+      var sidew = Math.max(0, (W - IW * k) / 2);
+      if (sidew > 1) {
+        var gl = ctx.createLinearGradient(sidew, 0, sidew + 90, 0);
+        gl.addColorStop(0, '#050506'); gl.addColorStop(1, 'rgba(5,5,6,0)');
+        ctx.fillStyle = '#050506'; ctx.fillRect(0, 0, sidew, H);
+        ctx.fillStyle = gl; ctx.fillRect(sidew, 0, 90, H);
+        var gr = ctx.createLinearGradient(W - sidew - 90, 0, W - sidew, 0);
+        gr.addColorStop(0, 'rgba(5,5,6,0)'); gr.addColorStop(1, '#050506');
+        ctx.fillStyle = gr; ctx.fillRect(W - sidew - 90, 0, 90, H);
+        ctx.fillStyle = '#050506'; ctx.fillRect(W - sidew, 0, sidew, H);
+      }
+      if (flash > 0.01) {
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = flash * 0.6; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+        flash *= 0.92;
+      }
     }
 
     function frame(now) {
       requestAnimationFrame(frame);
-      if (!active) return;
+      if (!active || !ready) return;
       t = now / 1000;
-      for (var key in target) cur[key] += (target[key] - cur[key]) * (key === 'intro' ? 0.05 : 0.07);
-      sm.x += (mouse.x - sm.x) * 0.06;
-      sm.y += (mouse.y - sm.y) * 0.06;
+      for (var key in target) cur[key] += (target[key] - cur[key]) * (key === 'intro' ? 0.045 : 0.08);
+      sm.x += (mouse.x - sm.x) * 0.06; sm.y += (mouse.y - sm.y) * 0.06;
       draw();
     }
 
-    build();
     resize();
     if ('ResizeObserver' in window) new ResizeObserver(resize).observe(cv);
     else addEventListener('resize', resize);
     requestAnimationFrame(frame);
 
-    return {
-      target: target,
-      shock: shock,
-      setActive: function (v) { active = v; }
-    };
+    return { target: target, shock: shock, setActive: function (v) { active = v; } };
   }
 
   window.Scene = { create: create };

@@ -39,7 +39,7 @@
 
   /* ---------- scenes ---------- */
   var hero = Scene.create($('#scene'));
-  var fin = Scene.create($('#finScene'), { crowd: false, init: { intro: 1, raise: 1, widen: 0.8 } });
+  var fin = Scene.create($('#finScene'), { fixed: 0.56, init: { intro: 1, burn: 1 } });
   fin.setActive(false);
   new IntersectionObserver(function (e) { fin.setActive(e[0].isIntersecting); }, { rootMargin: '100px' }).observe($('#finScene'));
 
@@ -84,12 +84,8 @@
 
   function apply(p) {
     var T = hero.target;
-    var c1 = smooth(0.16, 0.4, p), c2 = smooth(0.44, 0.66, p), c3 = smooth(0.7, 0.98, p);
-    T.lean = 0.25 + 0.45 * c1 - 0.3 * c3;
-    T.ring = 1 - 0.3 * c1 + 0.45 * c3;
-    T.raise = c2;
-    T.widen = 0.15 + 0.35 * c2 + 0.5 * c3;
-    T.fall = c3;
+    T.pan = p;
+    T.burn = smooth(0.5, 0.85, p);
 
     var h = smooth(0.02, 0.14, p);
     heroEl.style.opacity = 1 - h;
@@ -103,8 +99,8 @@
     });
     idxEl.textContent = '0' + (p < 0.45 ? 1 : p < 0.7 ? 2 : 3);
 
-    if (p > 0.66 && !shocked) { shocked = true; hero.shock(); }
-    if (p < 0.6) shocked = false;
+    if (p > 0.7 && !shocked) { shocked = true; hero.shock(); }
+    if (p < 0.64) shocked = false;
   }
   apply(0);
 
@@ -201,7 +197,7 @@
       var a = e.target.closest('a,button');
       var inStage = e.target.closest('.stage-in');
       if (a) { ring.classList.add('big'); label.textContent = 'GO'; }
-      else if (inStage) { ring.classList.add('big'); label.textContent = 'STRIKE'; }
+      else if (inStage) { ring.classList.add('big'); label.textContent = 'IGNITE'; }
       else { ring.classList.remove('big'); label.textContent = ''; }
     });
 
