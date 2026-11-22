@@ -24,16 +24,29 @@ function camFor(ax, ay, s, rot, tx, ty) {
   return { rot, s, x: tx - (dx * c - dy * si), y: ty - (dx * si + dy * c) };
 }
 
+/* the largest scale at which the sword's extents (a box in sword coordinates) stay `pad` px inside the screen */
+const HERO_BOX = [[0, -125], [1220, -125], [0, 70], [1220, 70]];     // blossoms ride above the blade, the tassel hangs below the pommel
+function fitScale(rot, cx, cy, box, W, H, pad) {
+  const a = rot * D2R, c = Math.cos(a), si = Math.sin(a);
+  let s = Infinity;
+  box.forEach(([x, y]) => {
+    const dx = x - ORIGIN_X, rx = dx * c - y * si, ry = dx * si + y * c;
+    if (rx > 0) s = Math.min(s, (W - pad - cx) / rx); else if (rx < 0) s = Math.min(s, (cx - pad) / -rx);
+    if (ry > 0) s = Math.min(s, (H - pad - cy) / ry); else if (ry < 0) s = Math.min(s, (cy - pad) / -ry);
+  });
+  return s;
+}
+
 function poses(W, H) {
-  const land = W / H > 0.95;
+  const land = W / H > 0.95, pad = Math.max(10, Math.min(W, H) * 0.03);
   if (land) {
-    const r = 27 * D2R;
-    const sh = Math.min((0.74 * W) / (1220 * Math.cos(r) + 40), (0.66 * H) / (1220 * Math.sin(r) + 60));
-    return { land, hero: { rot: -27, s: sh, x: W * 0.55, y: H * 0.47 }, over: { rot: 0, s: (0.88 * W) / 1670, x: W * 0.5, y: H * 0.52 }, focusAt: [W * 0.34, H * 0.5], focusRot: 0 };
+    const r = 27 * D2R, cx = W * 0.55, cy = H * 0.47;
+    const sh = Math.min((0.74 * W) / (1220 * Math.cos(r) + 40), (0.66 * H) / (1220 * Math.sin(r) + 60), fitScale(-27, cx, cy, HERO_BOX, W, H, pad));
+    return { land, hero: { rot: -27, s: sh, x: cx, y: cy }, over: { rot: 0, s: (0.88 * W) / 1670, x: W * 0.5, y: H * 0.52 }, focusAt: [W * 0.34, H * 0.5], focusRot: 0 };
   }
-  const r = 62 * D2R;
-  const sh = Math.min((0.9 * W) / (1220 * Math.cos(r) + 40), (0.7 * H) / (1220 * Math.sin(r) + 60));
-  return { land, hero: { rot: -62, s: sh, x: W * 0.5, y: H * 0.56 }, over: { rot: -90, s: Math.min((0.84 * H) / 1670, 0.5 * W / 80), x: W * 0.4, y: H * 0.5 }, focusAt: [W * 0.5, H * 0.34], focusRot: -90 };
+  const r = 62 * D2R, cx = W * 0.5, cy = H * 0.56;
+  const sh = Math.min((0.9 * W) / (1220 * Math.cos(r) + 40), (0.7 * H) / (1220 * Math.sin(r) + 60), fitScale(-62, cx, cy, HERO_BOX, W, H, pad));
+  return { land, hero: { rot: -62, s: sh, x: cx, y: cy }, over: { rot: -90, s: Math.min((0.84 * H) / 1670, 0.5 * W / 80), x: W * 0.4, y: H * 0.5 }, focusAt: [W * 0.5, H * 0.34], focusRot: -90 };
 }
 
 export default function Showcase({ revealed }) {
