@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Scene } from '../lib/ascent';
+import { Scene } from '../lib/summit';
 import { smooth, trap } from '../lib/anim';
 import SplitText from './rb/SplitText/SplitText';
 import ShinyText from './rb/ShinyText';

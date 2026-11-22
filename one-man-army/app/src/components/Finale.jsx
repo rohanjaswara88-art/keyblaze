@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Scene } from '../lib/ascent';
+import { Scene } from '../lib/summit';
 import { scrollToTarget } from '../lib/scroll';
 import ClickSpark from './rb/ClickSpark/ClickSpark';
 import Magnet from './rb/Magnet/Magnet';
@@ -7,7 +7,7 @@ import FuzzyText from './rb/FuzzyText/FuzzyText';
 import ShinyText from './rb/ShinyText';
 import { ScrollVelocity } from './rb/ScrollVelocity';
 
-/** Last screen: the burning wings again, a fuzzy headline, a magnetic button, click sparks. */
+/** Last screen: the burning star again, a fuzzy headline, a magnetic button, click sparks. */
 export default function Finale({ heroRef }) {
   const canvas = useRef(null);
 
@@ -41,7 +41,7 @@ export default function Finale({ heroRef }) {
         <div className="tick" aria-hidden="true" style={{ fontFamily: 'var(--display)' }}>
           <ScrollVelocity texts={['NO SHORTCUTS ✦ NO DAYS OFF ✦ NO EXCUSES']} velocity={90} fontSize="clamp(1.4rem,3vw,2.6rem)" fontWeight={400} color="#ffffff" separator=" ✦ " gap={24} />
         </div>
-        <footer className="mono">© 2026 SOLO — concept experience. Artwork supplied by the site owner. Built with React, React Bits, GSAP and Lenis.</footer>
+        <footer className="mono">© 2026 SOLO — concept experience. Every visual is generated in code. Built with React, React Bits, GSAP and Lenis.</footer>
       </ClickSpark>
     </section>
   );
