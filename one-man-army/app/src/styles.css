@@ -53,7 +53,7 @@ a{color:inherit;text-decoration:none}
 /* the part details */
 .panel{position:absolute;z-index:6;right:var(--pad);top:50%;transform:translateY(-50%);width:min(36vw,470px);opacity:0;pointer-events:none;transition:opacity .45s}
 .panel.on{opacity:1}
-.panel::before{content:"";position:absolute;z-index:-1;inset:-14vh -10vw -14vh -7vw;background:linear-gradient(to left,rgba(23,23,26,.97) 58%,rgba(23,23,26,0))}
+.panel::before{content:"";position:absolute;z-index:-1;inset:-14vh -10vw -14vh -16vw;background:linear-gradient(to left,rgba(23,23,26,.99) 66%,rgba(23,23,26,0))}
 .panel-in{animation:rise .6s cubic-bezier(.2,.8,.2,1)}
 @keyframes rise{from{transform:translateY(18px);opacity:0}to{transform:none;opacity:1}}
 .panel-k{display:flex;align-items:center;gap:12px;color:var(--bone2);margin-bottom:14px}
