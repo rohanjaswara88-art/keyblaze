@@ -27,9 +27,10 @@ npm run build      # writes ../index.html and ../assets
 
 ## What is where
 
-- `app/src/lib/summit.js` — the scene: a halftone mountain drawn by a fragment shader. Scroll is altitude; the
-  ranges slide down while an ember climbs the slope, then lifts into a burning star. Snow, wind, cursor torch,
-  hold-to-charge and a shock ring.
-- `app/src/components/Creed.jsx` — the brutal quotes, pinned and scrubbed.
-- `app/src/components/rb/` — React Bits components in use: SplitText, ShinyText, DotGrid, DecryptedText,
-  ScrollVelocity, CountUp, ClickSpark, Magnet, FuzzyText.
+- `app/src/components/Katana.jsx` — the katana, drawn in code as separate parts (kashira, tsuka, fuchi, tsuba,
+  seppa, habaki, blade) with a cherry-blossom branch on the blade.
+- `app/src/components/Showcase.jsx` — the scroll: hero pose, pulls apart, zooms into each part with a details panel.
+- `app/src/data/parts.js` — the text for each part.
+- `app/src/components/rb/` — React Bits components in use: SplitText, ShinyText, DecryptedText (the rest are kept for later).
+- `app/src/_archive/` — the earlier sections (brutal-quotes creed, flashlight text, numbers, finale, mountain scene),
+  parked until we add them back.
